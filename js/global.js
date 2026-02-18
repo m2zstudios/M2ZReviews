@@ -13,19 +13,28 @@ async function loadPosts() {
       if (res.ok) {
         const payload = await res.json();
         if (Array.isArray(payload.documents) && payload.documents.length) {
-          state.posts = payload.documents.map((d) => ({
-            title: d.title,
-            slug: d.slug,
-            description: d.description,
-            ogImage: d.ogImage,
-            heroImage: d.heroImage,
-            heroAlt: d.heroAlt,
-            publishDate: d.publishDate,
-            readingTime: d.readingTime,
-            category: d.category,
-            author: d.author,
-            trending: !!d.trending
-          }));
+          state.posts = payload.documents.map((d) => {
+            let stats = { likes: 0, shares: 0 };
+            if (typeof d.stats === 'string') {
+              try { stats = { ...stats, ...JSON.parse(d.stats) }; } catch {}
+            } else if (d.stats && typeof d.stats === 'object') {
+              stats = { ...stats, ...d.stats };
+            }
+            return {
+              title: d.title,
+              slug: d.slug,
+              description: d.description,
+              ogImage: d.ogImage,
+              heroImage: d.heroImage,
+              heroAlt: d.heroAlt,
+              publishDate: d.publishDate,
+              readingTime: d.readingTime,
+              category: d.category,
+              author: d.author,
+              trending: !!d.trending,
+              stats
+            };
+          });
         }
       }
     }
@@ -34,6 +43,7 @@ async function loadPosts() {
   if (!state.posts.length) {
     const res = await fetch('/data/posts.json');
     state.posts = await res.json();
+    state.posts = state.posts.map((p) => ({ ...p, stats: p.stats || { likes: 0, shares: 0 } }));
   }
 
   state.posts.sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
@@ -63,13 +73,17 @@ function renderList(el, posts, opts = {}) {
   el.innerHTML = posts.map((p) => `<li><a href="/posts/${p.slug}.html">${p.title}</a>${opts.meta ? `<div class="meta">${p.publishDate} • ${p.readingTime}</div>` : ''}</li>`).join('');
 }
 
+function truncate(text = '', max = 200) {
+  return text.length > max ? `${text.slice(0, max).trim()}…` : text;
+}
+
 function postCard(post) {
   return `<article class="post-card">
     <a href="/posts/${post.slug}.html"><img loading="lazy" src="${post.heroImage || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80'}" alt="${post.heroAlt || post.title}"></a>
     <div class="copy">
       <span class="badge">${post.category}</span>
       <h3><a href="/posts/${post.slug}.html">${post.title}</a></h3>
-      <p>${post.description}</p>
+      <p>${truncate(post.description || '', 200)}</p>
       <div class="meta">${post.publishDate} • ${post.readingTime}</div>
     </div>
   </article>`;
@@ -115,9 +129,7 @@ function injectBreadcrumb() {
   nav.className = 'breadcrumb';
   nav.setAttribute('aria-label', 'Breadcrumb');
   nav.innerHTML = items.map((item, idx) => idx === items.length - 1 ? `<span>${item.name}</span>` : `<a href="${item.href}">${item.name}</a>`).join('<i>/</i>');
-
-  const header = document.querySelector('.site-header');
-  header?.insertAdjacentElement('afterend', nav);
+  document.querySelector('.site-header')?.insertAdjacentElement('afterend', nav);
 }
 
 function injectSearch(posts) {
@@ -136,8 +148,7 @@ function injectSearch(posts) {
   const input = wrap.querySelector('.search-input');
   const clear = wrap.querySelector('.search-clear');
   const results = wrap.querySelector('.search-results');
-  const currentQ = new URLSearchParams(location.search).get('q') || '';
-  input.value = currentQ;
+  input.value = new URLSearchParams(location.search).get('q') || '';
 
   const renderResults = (q) => {
     const v = q.trim().toLowerCase();
@@ -148,32 +159,33 @@ function injectSearch(posts) {
     }
     const matches = posts.filter((p) => `${p.title} ${p.description} ${p.category}`.toLowerCase().includes(v)).slice(0, 6);
     results.hidden = false;
-    results.innerHTML = matches.length
-      ? matches.map((p) => `<a href="/posts/${p.slug}.html">${p.title}<span>${p.category}</span></a>`).join('')
-      : '<div class="search-empty">No matching posts</div>';
+    results.innerHTML = matches.length ? matches.map((p) => `<a href="/posts/${p.slug}.html">${p.title}<span>${p.category}</span></a>`).join('') : '<div class="search-empty">No matching posts</div>';
   };
 
   input.addEventListener('input', (e) => renderResults(e.target.value));
   clear.addEventListener('click', () => { input.value = ''; renderResults(''); input.focus(); });
-
   wrap.addEventListener('submit', (e) => {
     e.preventDefault();
     const q = input.value.trim();
     location.href = q ? `/reviews.html?q=${encodeURIComponent(q)}` : '/reviews.html';
   });
 
-  document.addEventListener('click', (e) => {
-    if (!wrap.contains(e.target)) results.hidden = true;
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== input) {
-      e.preventDefault();
-      input.focus();
-    }
-  });
+  document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) results.hidden = true; });
+  document.addEventListener('keydown', (e) => { if (e.key === '/' && document.activeElement !== input) { e.preventDefault(); input.focus(); } });
 
   nav.prepend(wrap);
+}
+
+async function saveNewsletterEmail(email) {
+  const cfg = window.APPWRITE_CONFIG || {};
+  if (!cfg.endpoint || !cfg.projectId || !cfg.databaseId || !cfg.newsletterSubscribersCollectionId) return false;
+  const body = { documentId: 'unique()', data: { email } };
+  const res = await fetch(`${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.newsletterSubscribersCollectionId}/documents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': cfg.projectId },
+    body: JSON.stringify(body)
+  });
+  return res.ok;
 }
 
 function enhanceFooter(posts) {
@@ -194,9 +206,18 @@ function enhanceFooter(posts) {
     <p class="footer-bottom">© ${year} M2Z Reviews. All rights reserved.</p>
   `;
 
-  footer.querySelector('[data-footer-news]')?.addEventListener('submit', (e) => {
+  footer.querySelector('[data-footer-news]')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    footer.querySelector('[data-news-status]').textContent = 'Thanks! You are subscribed.';
+    const input = footer.querySelector('.footer-news input');
+    const status = footer.querySelector('[data-news-status]');
+    const email = input.value.trim().toLowerCase();
+    if (!email) return;
+    try {
+      const ok = await saveNewsletterEmail(email);
+      status.textContent = ok ? 'Subscribed successfully.' : 'Could not subscribe now.';
+    } catch {
+      status.textContent = 'Could not subscribe now.';
+    }
   });
 }
 
@@ -206,7 +227,7 @@ function injectAdAreas(page) {
     if (target) {
       const ad = document.createElement('section');
       ad.className = 'ad-area';
-      ad.innerHTML = '<a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80" alt="Sponsored banner advertisement"></a>';
+      ad.innerHTML = '<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80" alt="Sponsored banner advertisement"></a>';
       target.parentElement.insertBefore(ad, target);
     }
   }
@@ -216,15 +237,65 @@ function injectAdAreas(page) {
     if (article && !article.querySelector('.ad-inline')) {
       const ad = document.createElement('section');
       ad.className = 'ad-area ad-inline';
-      ad.innerHTML = '<a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80" alt="Sponsored product ad"></a>';
+      ad.innerHTML = '<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80" alt="Sponsored product ad"></a>';
       const related = article.querySelector('.related');
       article.insertBefore(ad, related || null);
     }
   }
 }
 
+function ensureLightbox() {
+  if (document.getElementById('imgLightbox')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'imgLightbox';
+  wrap.className = 'img-lightbox';
+  wrap.innerHTML = '<button class="lightbox-close" type="button" aria-label="Close">×</button><img alt="Expanded image">';
+  document.body.appendChild(wrap);
+  wrap.addEventListener('click', (e) => {
+    if (e.target === wrap || e.target.classList.contains('lightbox-close')) wrap.classList.remove('open');
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') wrap.classList.remove('open'); });
+}
+
+function bindLightboxOnArticle() {
+  if (document.body.dataset.page !== 'post') return;
+  ensureLightbox();
+  const lightbox = document.getElementById('imgLightbox');
+  const lbImg = lightbox.querySelector('img');
+  document.querySelectorAll('.article .hero-image, .article .article-grid img, .article .image-grid img').forEach((img) => {
+    img.style.cursor = 'zoom-in';
+    img.addEventListener('click', () => {
+      lbImg.src = img.src;
+      lbImg.alt = img.alt || 'Expanded image';
+      lightbox.classList.add('open');
+    });
+  });
+}
+
+async function updatePostStats(slug, stats) {
+  const cfg = window.APPWRITE_CONFIG || {};
+  if (!cfg.endpoint || !cfg.projectId || !cfg.databaseId || !cfg.postsCollectionId || !slug) return;
+  try {
+    const listRes = await fetch(`${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents?limit=100`, {
+      headers: { 'X-Appwrite-Project': cfg.projectId }
+    });
+    if (!listRes.ok) return;
+    const payload = await listRes.json();
+    const doc = (payload.documents || []).find((d) => d.slug === slug);
+    if (!doc?.$id) return;
+    await fetch(`${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents/${doc.$id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': cfg.projectId },
+      body: JSON.stringify({ data: { stats: JSON.stringify(stats) } })
+    });
+  } catch {}
+}
+
 function setupPostEnhancements() {
   if (document.body.dataset.page !== 'post') return;
+
+  const meta = document.querySelector('.article .meta');
+  if (meta) meta.textContent = meta.textContent.replace(/\s*•\s*by\s+.*$/i, '');
 
   if (!document.querySelector('.reading-progress')) {
     const bar = document.createElement('div');
@@ -237,26 +308,31 @@ function setupPostEnhancements() {
     });
   }
 
-  const meta = document.querySelector('.article .meta');
+  const slug = document.body.dataset.slug;
+  const post = state.posts.find((p) => p.slug === slug) || { stats: { likes: 0, shares: 0 } };
+  const stats = { likes: Number(post.stats?.likes || 0), shares: Number(post.stats?.shares || 0) };
+
   if (meta && !document.querySelector('.author-core')) {
     const authorBlock = document.createElement('section');
     authorBlock.className = 'author-core';
     authorBlock.innerHTML = `
       <p><strong>Author : Meraz Ahmed</strong> <img src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png" alt="Verified badge" width="18" height="18" loading="lazy"></p>
-      <div class="post-actions"><button type="button" data-like-btn>👍 Like <span>0</span></button><button type="button" data-share-btn>🔗 Share</button><button type="button" data-save-btn>⭐ Save</button></div>
+      <div class="post-actions">
+        <button type="button" data-like-btn>👍 Like <span>${stats.likes}</span></button>
+        <button type="button" data-share-btn>🔗 Share <span>${stats.shares}</span></button>
+        <button type="button" data-save-btn>⭐ Save</button>
+      </div>
     `;
     meta.insertAdjacentElement('afterend', authorBlock);
 
     const likeBtn = authorBlock.querySelector('[data-like-btn]');
     const shareBtn = authorBlock.querySelector('[data-share-btn]');
     const saveBtn = authorBlock.querySelector('[data-save-btn]');
-    const key = `liked:${location.pathname}`;
-    let likes = Number(localStorage.getItem(key) || 0);
-    likeBtn.querySelector('span').textContent = String(likes);
-    likeBtn.addEventListener('click', () => {
-      likes += 1;
-      localStorage.setItem(key, String(likes));
-      likeBtn.querySelector('span').textContent = String(likes);
+
+    likeBtn.addEventListener('click', async () => {
+      stats.likes += 1;
+      likeBtn.querySelector('span').textContent = String(stats.likes);
+      await updatePostStats(slug, stats);
     });
 
     shareBtn.addEventListener('click', async () => {
@@ -264,9 +340,10 @@ function setupPostEnhancements() {
         try { await navigator.share({ title: document.title, url: location.href }); } catch {}
       } else {
         await navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied';
-        setTimeout(() => (shareBtn.textContent = '🔗 Share'), 1200);
       }
+      stats.shares += 1;
+      shareBtn.querySelector('span').textContent = String(stats.shares);
+      await updatePostStats(slug, stats);
     });
 
     saveBtn.addEventListener('click', () => {
@@ -276,6 +353,8 @@ function setupPostEnhancements() {
       saveBtn.textContent = next === '1' ? '⭐ Saved' : '⭐ Save';
     });
   }
+
+  bindLightboxOnArticle();
 }
 
 function setupUtilityUi() {
@@ -286,23 +365,6 @@ function setupUtilityUi() {
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     document.body.appendChild(btn);
     window.addEventListener('scroll', () => btn.classList.toggle('show', window.scrollY > 500));
-  }
-
-  const title = document.querySelector('.article h1');
-  if (title && !document.querySelector('.copy-link')) {
-    const copy = document.createElement('button');
-    copy.className = 'copy-link';
-    copy.textContent = 'Copy link';
-    copy.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(location.href);
-        copy.textContent = 'Copied';
-      } catch {
-        copy.textContent = 'Cannot copy';
-      }
-      setTimeout(() => (copy.textContent = 'Copy link'), 1000);
-    });
-    title.insertAdjacentElement('afterend', copy);
   }
 }
 
@@ -323,31 +385,20 @@ function renderReviewsControls(posts) {
   const q = (params.get('q') || '').trim().toLowerCase();
   let category = 'All';
   let sort = 'new';
-
   const grid = document.querySelector('[data-latest-grid]');
-  const stats = host.querySelector('[data-review-stats]');
+  const statsEl = host.querySelector('[data-review-stats]');
 
   const render = () => {
     let filtered = posts.filter((p) => category === 'All' || p.category === category);
     if (q) filtered = filtered.filter((p) => `${p.title} ${p.description}`.toLowerCase().includes(q));
     filtered = filtered.sort((a, b) => (sort === 'new' ? new Date(b.publishDate) - new Date(a.publishDate) : new Date(a.publishDate) - new Date(b.publishDate)));
-
     if (grid) grid.innerHTML = filtered.length ? filtered.map(postCard).join('') : '<div class="empty-state">No posts match your filters yet.</div>';
-    if (stats) stats.textContent = `Showing ${filtered.length} post${filtered.length === 1 ? '' : 's'}${q ? ` for “${q}”` : ''}.`;
-
+    if (statsEl) statsEl.textContent = `Showing ${filtered.length} post${filtered.length === 1 ? '' : 's'}${q ? ` for “${q}”` : ''}.`;
     host.querySelectorAll('[data-cat]').forEach((btn) => btn.classList.toggle('active', btn.dataset.cat === category));
   };
 
-  host.querySelectorAll('[data-cat]').forEach((btn) => btn.addEventListener('click', () => {
-    category = btn.dataset.cat;
-    render();
-  }));
-
-  host.querySelector('[data-sort]').addEventListener('change', (e) => {
-    sort = e.target.value;
-    render();
-  });
-
+  host.querySelectorAll('[data-cat]').forEach((btn) => btn.addEventListener('click', () => { category = btn.dataset.cat; render(); }));
+  host.querySelector('[data-sort]').addEventListener('change', (e) => { sort = e.target.value; render(); });
   render();
 }
 
@@ -355,17 +406,12 @@ async function initHomepage() {
   const posts = await loadPosts();
   const latestGrid = document.querySelector('[data-latest-grid]');
   if (latestGrid) latestGrid.innerHTML = posts.slice(0, 6).map(postCard).join('');
-
   renderList(document.querySelector('[data-sidebar-latest]'), posts.slice(0, 5), { meta: true });
   renderList(document.querySelector('[data-sidebar-trending]'), posts.filter((p) => p.trending).slice(0, 5));
-
-  const categories = [...new Set(posts.map((p) => p.category))];
   const categoriesEl = document.querySelector('[data-categories]');
-  if (categoriesEl) categoriesEl.innerHTML = categories.map((c) => `<span class="badge">${c}</span>`).join(' ');
-
+  if (categoriesEl) categoriesEl.innerHTML = [...new Set(posts.map((p) => p.category))].map((c) => `<span class="badge">${c}</span>`).join(' ');
   const trendingEl = document.querySelector('[data-trending-block]');
   if (trendingEl) trendingEl.innerHTML = posts.filter((p) => p.trending).slice(0, 3).map((p) => `<li><a href="/posts/${p.slug}.html">${p.title}</a></li>`).join('');
-
   injectSearch(posts);
 }
 
@@ -375,17 +421,12 @@ async function initPostPage() {
   const posts = await loadPosts();
   const current = posts.find((p) => p.slug === slug);
   if (!current) return;
-
   renderList(document.querySelector('[data-sidebar-latest]'), posts.slice(0, 5), { meta: true });
   renderList(document.querySelector('[data-sidebar-trending]'), posts.filter((p) => p.trending).slice(0, 5));
-
-  const related = posts.filter((p) => p.slug !== slug && p.category === current.category).slice(0, 3);
   const relatedEl = document.querySelector('[data-related-posts]');
-  if (relatedEl) relatedEl.innerHTML = related.map(postCard).join('');
-
+  if (relatedEl) relatedEl.innerHTML = posts.filter((p) => p.slug !== slug && p.category === current.category).slice(0, 3).map(postCard).join('');
   const canonical = document.querySelector('link[rel="canonical"]');
   if (canonical) canonical.href = `${SITE_URL}/posts/${slug}.html`;
-
   injectSearch(posts);
 }
 
@@ -406,7 +447,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     injectSearch(posts);
   }
   if (page === 'post') await initPostPage();
-
   if (!['home', 'listing', 'post'].includes(page)) {
     renderList(document.querySelector('[data-sidebar-latest]'), posts.slice(0, 5), { meta: true });
     renderList(document.querySelector('[data-sidebar-trending]'), posts.filter((p) => p.trending).slice(0, 5));

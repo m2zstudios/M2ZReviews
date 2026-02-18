@@ -4,5 +4,6 @@ window.APPWRITE_CONFIG = {
   databaseId: 'm2z-reviews',
   postsCollectionId: 'posts',
   usersCollectionId: 'users',
+  newsletterSubscribersCollectionId: 'newsletter-subscribers',
   bucketId: 'post-content'
 };
