@@ -1,0 +1,259 @@
+/* ================= GLOBAL ================= */
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:'Segoe UI', Arial, sans-serif;
+  background:#f3f5f9;
+  color:#333;
+}
+
+/* ================= LAYOUT ================= */
+
+.container{
+  display:flex;
+  height:100vh;
+  overflow:hidden;
+}
+
+/* LEFT PANEL */
+.left{
+  width:38%;
+  padding:25px;
+  overflow-y:auto;
+  background:#ffffff;
+  border-right:1px solid #e5e7eb;
+}
+
+/* RIGHT PANEL */
+.right{
+  width:62%;
+  padding:40px;
+  overflow-y:auto;
+  background:#eef1f6;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+/* ================= EDITOR ================= */
+
+.editor-box{
+  background:#fff;
+  padding:18px;
+  margin-bottom:18px;
+  border-radius:14px;
+  border:1px solid #e4e6ea;
+  transition:0.2s ease;
+}
+
+.editor-box:hover{
+  box-shadow:0 8px 20px rgba(0,0,0,0.06);
+}
+
+input, textarea, select{
+  width:100%;
+  padding:10px;
+  margin-bottom:12px;
+  border-radius:8px;
+  border:1px solid #d1d5db;
+  font-size:14px;
+  transition:0.2s;
+}
+
+input:focus, textarea:focus, select:focus{
+  outline:none;
+  border-color:#2563eb;
+  box-shadow:0 0 0 2px rgba(37,99,235,0.2);
+}
+
+textarea{
+  min-height:100px;
+  resize:vertical;
+}
+
+button{
+  padding:8px 14px;
+  border-radius:8px;
+  border:none;
+  background:#111;
+  color:white;
+  cursor:pointer;
+  font-size:14px;
+  transition:0.2s;
+}
+
+button:hover{
+  background:#333;
+}
+
+/* ================= PREVIEW ================= */
+
+.preview-wrapper{
+  width:800px;
+  background:#ffffff;
+  padding:40px;
+  border-radius:20px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.08);
+}
+
+/* TITLE BLOCK */
+.title-block{
+  background:#f8fafc;
+  padding:25px;
+  border-radius:18px;
+  margin-bottom:25px;
+  border:1px solid #e5e7eb;
+}
+
+.title-block h1{
+  margin:0;
+  line-height:1.3;
+}
+
+.post-date{
+  margin-top:10px;
+  font-size:14px;
+  color:#6b7280;
+}
+
+/* HERO IMAGE */
+.hero-wrapper{
+  margin-top:20px;
+  margin-bottom:30px;
+}
+
+.hero-wrapper img{
+  width:100%;
+  border-radius:16px;
+}
+
+/* TEXT BLOCK */
+.text-block{
+  line-height:1.8;
+  margin-bottom:30px;
+  white-space:pre-wrap;
+}
+
+/* ================= GRID FIXED ================= */
+
+.image-grid{
+  display:grid;
+  gap:20px;
+  margin-top:25px;
+  margin-bottom:30px;
+}
+
+/* 2 images side by side */
+.image-grid.ipr-1{
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 1 image per row */
+.image-grid.ipr-2{
+  grid-template-columns: 1fr;
+}
+
+.image-grid img{
+  width:100%;
+  height:260px;
+  border-radius:16px;
+}
+
+/* ================= BUTTON ================= */
+
+.button-wrapper{
+  margin-top:25px;
+  margin-bottom:20px;
+}
+
+.button-wrapper a{
+  display:inline-block;
+  padding:14px 28px;
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:white;
+  text-decoration:none;
+  border-radius:30px;
+  font-weight:600;
+  transition:0.25s ease;
+  box-shadow:0 6px 20px rgba(37,99,235,0.3);
+}
+
+.button-wrapper a:hover{
+  transform:translateY(-3px);
+}
+::-webkit-scrollbar{
+  width:8px;
+}
+
+::-webkit-scrollbar-thumb{
+  background:#cbd5e1;
+  border-radius:10px;
+}
+
+.text-styler{
+  position:fixed;
+  display:none;
+  gap:6px;
+  padding:6px;
+  background:#aeaeaf;
+  border-radius:10px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.3);
+  z-index:99999;
+}
+
+.text-styler button{
+  background:#000000;
+  border:none;
+  padding:6px 8px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:13px;
+}
+
+.text-styler button:hover{
+  background:#e5e7eb;
+}
+
+.link-editor{
+  position:fixed;
+  display:none;
+  gap:8px;
+  align-items:center;
+  padding:8px;
+  background:#111;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  z-index:100000;
+}
+
+.link-editor input[type="text"],
+.link-editor input:not([type]){
+  width:220px;
+  padding:6px 8px;
+  border-radius:8px;
+  border:none;
+  outline:none;
+  font-size:13px;
+}
+
+.link-editor label{
+  color:#ddd;
+  font-size:12px;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.link-editor button{
+  background:#2563eb;
+  color:white;
+  border:none;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:13px;
+}

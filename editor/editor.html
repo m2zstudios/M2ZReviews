@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pro Page Builder</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="left">
+
+<h2>Page Builder</h2>
+
+<h3>Main</h3>
+
+<label>Title</label>
+<input id="titleInput">
+
+<label>Meta Description</label>
+<textarea id="metaDescription" placeholder="SEO description..."></textarea>
+
+<label>OG Image URL</label>
+<input id="ogImageInput" placeholder="https://example.com/image.jpg">
+
+
+<label>Title Font Size</label>
+<input type="number" id="titleSize" value="32">
+
+<label>Title Weight</label>
+<select id="titleWeight">
+<option value="400">Normal</option>
+<option value="700">Bold</option>
+</select>
+
+<label>Title Align</label>
+<select id="titleAlign">
+<option value="left">Left</option>
+<option value="center">Center</option>
+<option value="right">Right</option>
+</select>
+
+<hr>
+
+<label>Hero Image URL</label>
+<input id="heroInput">
+
+<label>Hero Height</label>
+<input type="number" id="heroHeight" value="350">
+
+<hr>
+
+<button onclick="addText()">+ Text</button>
+<button onclick="addGrid()">+ Image Grid</button>
+<button onclick="addButton()">+ Button</button>
+<hr>
+<button onclick="exportHTML()">⬇ Export HTML</button>
+
+
+<div id="sectionsEditor"></div>
+
+</div>
+
+<div class="right">
+<div class="preview-wrapper" id="preview"></div>
+</div>
+
+</div>
+<div id="textStyler" class="text-styler">
+  <button data-cmd="bold"><b>B</b></button>
+  <button data-cmd="underline"><u>U</u></button>
+  <button data-cmd="link">🔗</button>
+  <button data-cmd="color">🎨</button>
+</div>
+
+<div id="linkEditor" class="link-editor">
+  <input id="linkInput" placeholder="https://example.com">
+  <label>
+    <input type="checkbox" id="linkBlank"> new tab
+  </label>
+  <button id="linkDone">Done</button>
+</div>
+
+<input type="color" id="colorPicker" style="display:none">
+
+
+<script src="preview.js"></script>
+<script src="editor.js"></script>
+
+
+</body>
+</html>
