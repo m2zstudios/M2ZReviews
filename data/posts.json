@@ -1,0 +1,41 @@
+[
+  {
+    "title": "M2Z UltraBuds Pro Review: Premium Audio Without the Premium Price",
+    "slug": "m2z-ultrabuds-pro-review",
+    "description": "A detailed hands-on review of M2Z UltraBuds Pro with audio tests, ANC performance, battery benchmarks, and value analysis.",
+    "ogImage": "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?auto=format&fit=crop&w=1400&q=80",
+    "heroImage": "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?auto=format&fit=crop&w=1400&q=80",
+    "heroAlt": "Wireless earbuds inside charging case on dark desk",
+    "publishDate": "2026-02-12",
+    "readingTime": "8 min read",
+    "category": "Audio",
+    "author": "Maya Zaman",
+    "trending": true
+  },
+  {
+    "title": "M2Z SmartWatch X2 Review: Better Sleep Tracking, Better Value",
+    "slug": "m2z-smartwatch-x2-review",
+    "description": "We test the M2Z SmartWatch X2 over two weeks to evaluate health tracking accuracy, battery life, display quality, and software polish.",
+    "ogImage": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=1400&q=80",
+    "heroImage": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=1400&q=80",
+    "heroAlt": "Closeup of smartwatch screen showing activity metrics",
+    "publishDate": "2026-02-09",
+    "readingTime": "6 min read",
+    "category": "Wearables",
+    "author": "Noah Sterling",
+    "trending": true
+  },
+  {
+    "title": "Budget Phone Face-Off: M2Z One Lite vs Rivals",
+    "slug": "budget-phone-face-off",
+    "description": "A side-by-side comparison of entry-level phones across camera consistency, display calibration, thermals, and software support.",
+    "ogImage": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1400&q=80",
+    "heroImage": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1400&q=80",
+    "heroAlt": "Three smartphones arranged on a wooden table",
+    "publishDate": "2026-02-05",
+    "readingTime": "9 min read",
+    "category": "Phones",
+    "author": "Maya Zaman",
+    "trending": false
+  }
+]
