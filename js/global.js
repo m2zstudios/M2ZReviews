@@ -14,29 +14,17 @@ function applyTheme(theme) {
   const next = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('theme', next);
-  const badge = document.querySelector('[data-theme-badge]');
-  if (badge) badge.textContent = next === 'dark' ? 'Dark' : 'Light';
+  const btn = document.querySelector('[data-theme-toggle]');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
 }
 
 function initThemeToggle() {
   applyTheme(localStorage.getItem('theme') || 'light');
   const btn = document.querySelector('[data-theme-toggle]');
   if (!btn) return;
-  if (!btn.querySelector('[data-theme-badge]')) {
-    btn.innerHTML = `Theme <span class="theme-badge" data-theme-badge></span>`;
-  }
-  applyTheme(localStorage.getItem('theme') || 'light');
-
   btn.addEventListener('click', () => {
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     applyTheme(next);
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.shiftKey && e.key.toLowerCase() === 't') {
-      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
-    }
   });
 }
 
@@ -57,24 +45,10 @@ function postCard(post) {
   </article>`;
 }
 
-function injectNoticeBar() {
-  if (localStorage.getItem('m2z-hide-notice') === '1') return;
-  if (document.querySelector('.site-notice') || document.body.dataset.page === 'admin') return;
-  const bar = document.createElement('div');
-  bar.className = 'site-notice';
-  bar.innerHTML = `<p>🚀 New: Smarter search, review filters, and richer article tools are live.</p><button type="button" aria-label="Dismiss">×</button>`;
-  document.body.prepend(bar);
-  bar.querySelector('button').addEventListener('click', () => {
-    localStorage.setItem('m2z-hide-notice', '1');
-    bar.remove();
-  });
-}
-
 function initHeaderEnhancements() {
   const header = document.querySelector('.site-header');
   const nav = document.querySelector('.nav');
   if (!header || !nav) return;
-
   header.classList.add('header-enhanced');
 
   const path = location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '');
@@ -92,14 +66,6 @@ function initHeaderEnhancements() {
     header.insertBefore(toggle, nav);
     toggle.addEventListener('click', () => nav.classList.toggle('open'));
   }
-
-  let lastY = 0;
-  window.addEventListener('scroll', () => {
-    const y = window.scrollY;
-    header.classList.toggle('compact', y > 8);
-    header.classList.toggle('down', y > lastY && y > 120);
-    lastY = y;
-  });
 }
 
 function injectBreadcrumb() {
@@ -152,22 +118,13 @@ function injectSearch(posts) {
     }
     const matches = posts.filter((p) => `${p.title} ${p.description} ${p.category}`.toLowerCase().includes(v)).slice(0, 6);
     results.hidden = false;
-    if (!matches.length) {
-      results.innerHTML = '<div class="search-empty">No matching posts</div>';
-      return;
-    }
-    results.innerHTML = matches.map((p) => `<a href="/posts/${p.slug}.html">${p.title}<span>${p.category}</span></a>`).join('');
+    results.innerHTML = matches.length
+      ? matches.map((p) => `<a href="/posts/${p.slug}.html">${p.title}<span>${p.category}</span></a>`).join('')
+      : '<div class="search-empty">No matching posts</div>';
   };
 
   input.addEventListener('input', (e) => renderResults(e.target.value));
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') renderResults('');
-  });
-  clear.addEventListener('click', () => {
-    input.value = '';
-    renderResults('');
-    input.focus();
-  });
+  clear.addEventListener('click', () => { input.value = ''; renderResults(''); input.focus(); });
 
   wrap.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -199,44 +156,96 @@ function enhanceFooter(posts) {
   footer.dataset.enhanced = '1';
   footer.innerHTML = `
     <section class="footer-grid">
-      <div>
-        <h3>M2Z Reviews</h3>
-        <p>Independent product analysis with transparent testing and practical verdicts.</p>
-        <p class="meta">Last content update: ${lastUpdated}</p>
-      </div>
-      <div>
-        <h4>Navigate</h4>
-        <ul>
-          <li><a href="/reviews.html">Reviews</a></li>
-          <li><a href="/compare.html">Compare</a></li>
-          <li><a href="/about.html">About</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>Editorial</h4>
-        <ul>
-          <li><a href="/about.html">Methodology</a></li>
-          <li><a href="/about.html">Disclosure</a></li>
-          <li><a href="/about.html">Contact</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>Newsletter</h4>
-        <form class="footer-news" data-footer-news>
-          <input type="email" required placeholder="Email address" aria-label="Email address" />
-          <button class="btn" type="submit">Subscribe</button>
-        </form>
-        <p class="meta" data-news-status></p>
-      </div>
+      <div><h3>M2Z Reviews</h3><p>Trusted product reviews and buying insights.</p><p class="meta">Last update: ${lastUpdated}</p></div>
+      <div><h4>Navigate</h4><ul><li><a href="/reviews.html">Reviews</a></li><li><a href="/compare.html">Compare</a></li><li><a href="/about.html">About</a></li></ul></div>
+      <div><h4>Support</h4><ul><li><a href="/about.html">Disclaimer</a></li><li><a href="/about.html">Affiliate Info</a></li></ul></div>
+      <div><h4>Newsletter</h4><form class="footer-news" data-footer-news><input type="email" required placeholder="Email address" aria-label="Email address" /><button class="btn" type="submit">Subscribe</button></form><p class="meta" data-news-status></p></div>
     </section>
     <p class="footer-bottom">© ${year} M2Z Reviews. All rights reserved.</p>
   `;
 
   footer.querySelector('[data-footer-news]')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    const status = footer.querySelector('[data-news-status]');
-    status.textContent = 'Thanks! You are subscribed.';
+    footer.querySelector('[data-news-status]').textContent = 'Thanks! You are subscribed.';
   });
+}
+
+function injectAdAreas(page) {
+  if (page === 'home' && !document.querySelector('.ad-area')) {
+    const target = document.querySelector('.blocks');
+    if (target) {
+      const ad = document.createElement('section');
+      ad.className = 'ad-area';
+      ad.innerHTML = '<a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80" alt="Sponsored banner advertisement"></a>';
+      target.parentElement.insertBefore(ad, target);
+    }
+  }
+
+  if (page === 'post') {
+    const article = document.querySelector('.article');
+    if (article && !article.querySelector('.ad-inline')) {
+      const ad = document.createElement('section');
+      ad.className = 'ad-area ad-inline';
+      ad.innerHTML = '<a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80" alt="Sponsored product ad"></a>';
+      const related = article.querySelector('.related');
+      article.insertBefore(ad, related || null);
+    }
+  }
+}
+
+function setupPostEnhancements() {
+  if (document.body.dataset.page !== 'post') return;
+
+  if (!document.querySelector('.reading-progress')) {
+    const bar = document.createElement('div');
+    bar.className = 'reading-progress';
+    document.body.appendChild(bar);
+    window.addEventListener('scroll', () => {
+      const h = document.documentElement;
+      const ratio = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+      bar.style.transform = `scaleX(${Math.min(1, Math.max(0, ratio))})`;
+    });
+  }
+
+  const meta = document.querySelector('.article .meta');
+  if (meta && !document.querySelector('.author-core')) {
+    const authorBlock = document.createElement('section');
+    authorBlock.className = 'author-core';
+    authorBlock.innerHTML = `
+      <p><strong>Author : Meraz Ahmed</strong> <img src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png" alt="Verified badge" width="18" height="18" loading="lazy"></p>
+      <div class="post-actions"><button type="button" data-like-btn>👍 Like <span>0</span></button><button type="button" data-share-btn>🔗 Share</button><button type="button" data-save-btn>⭐ Save</button></div>
+    `;
+    meta.insertAdjacentElement('afterend', authorBlock);
+
+    const likeBtn = authorBlock.querySelector('[data-like-btn]');
+    const shareBtn = authorBlock.querySelector('[data-share-btn]');
+    const saveBtn = authorBlock.querySelector('[data-save-btn]');
+    const key = `liked:${location.pathname}`;
+    let likes = Number(localStorage.getItem(key) || 0);
+    likeBtn.querySelector('span').textContent = String(likes);
+    likeBtn.addEventListener('click', () => {
+      likes += 1;
+      localStorage.setItem(key, String(likes));
+      likeBtn.querySelector('span').textContent = String(likes);
+    });
+
+    shareBtn.addEventListener('click', async () => {
+      if (navigator.share) {
+        try { await navigator.share({ title: document.title, url: location.href }); } catch {}
+      } else {
+        await navigator.clipboard.writeText(location.href);
+        shareBtn.textContent = '✅ Copied';
+        setTimeout(() => (shareBtn.textContent = '🔗 Share'), 1200);
+      }
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const saveKey = `saved:${location.pathname}`;
+      const next = localStorage.getItem(saveKey) === '1' ? '0' : '1';
+      localStorage.setItem(saveKey, next);
+      saveBtn.textContent = next === '1' ? '⭐ Saved' : '⭐ Save';
+    });
+  }
 }
 
 function setupUtilityUi() {
@@ -249,32 +258,21 @@ function setupUtilityUi() {
     window.addEventListener('scroll', () => btn.classList.toggle('show', window.scrollY > 500));
   }
 
-  if (document.body.dataset.page === 'post' && !document.querySelector('.reading-progress')) {
-    const bar = document.createElement('div');
-    bar.className = 'reading-progress';
-    document.body.appendChild(bar);
-    window.addEventListener('scroll', () => {
-      const h = document.documentElement;
-      const ratio = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
-      bar.style.transform = `scaleX(${Math.min(1, Math.max(0, ratio))})`;
+  const title = document.querySelector('.article h1');
+  if (title && !document.querySelector('.copy-link')) {
+    const copy = document.createElement('button');
+    copy.className = 'copy-link';
+    copy.textContent = 'Copy link';
+    copy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(location.href);
+        copy.textContent = 'Copied';
+      } catch {
+        copy.textContent = 'Cannot copy';
+      }
+      setTimeout(() => (copy.textContent = 'Copy link'), 1000);
     });
-
-    const title = document.querySelector('.article h1');
-    if (title) {
-      const copy = document.createElement('button');
-      copy.className = 'copy-link';
-      copy.textContent = 'Copy link';
-      copy.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(location.href);
-          copy.textContent = 'Copied';
-          setTimeout(() => (copy.textContent = 'Copy link'), 1000);
-        } catch {
-          copy.textContent = 'Cannot copy';
-        }
-      });
-      title.insertAdjacentElement('afterend', copy);
-    }
+    title.insertAdjacentElement('afterend', copy);
   }
 }
 
@@ -285,15 +283,8 @@ function renderReviewsControls(posts) {
   const categories = ['All', ...new Set(posts.map((p) => p.category))];
   host.innerHTML = `
     <div class="review-controls">
-      <div class="category-pills" data-category-pills>
-        ${categories.map((c) => `<button type="button" data-cat="${c}">${c}</button>`).join('')}
-      </div>
-      <label class="sort-wrap">Sort
-        <select data-sort>
-          <option value="new">Latest first</option>
-          <option value="old">Oldest first</option>
-        </select>
-      </label>
+      <div class="category-pills" data-category-pills>${categories.map((c) => `<button type="button" data-cat="${c}">${c}</button>`).join('')}</div>
+      <label class="sort-wrap">Sort<select data-sort><option value="new">Latest first</option><option value="old">Oldest first</option></select></label>
     </div>
     <p class="meta" data-review-stats></p>
   `;
@@ -370,7 +361,6 @@ async function initPostPage() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initThemeToggle();
-  injectNoticeBar();
   initHeaderEnhancements();
   injectBreadcrumb();
   setupUtilityUi();
@@ -393,5 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     injectSearch(posts);
   }
 
+  setupPostEnhancements();
+  injectAdAreas(page);
   enhanceFooter(posts);
 });
