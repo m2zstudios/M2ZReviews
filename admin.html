@@ -1,21 +1,100 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin | M2Z Reviews CMS</title><meta name="description" content="Protected admin page to launch editor, export posts, and update posts index."><meta name="robots" content="noindex,nofollow"><link rel="canonical" href="https://example.com/admin.html"><link rel="stylesheet" href="/css/style.css"></head>
-<body data-page="admin"><header class="site-header"><a class="logo" href="/">M2Z Reviews</a><nav class="nav"><a href="/">Back to site</a><button class="theme-toggle" data-theme-toggle>Theme</button></nav></header>
-<main class="layout"><section class="content"><h1>Admin Content Console</h1><p class="meta">Protected route for editor access and post exports.</p>
-<div id="authBox" class="block"><h2>Access</h2><label>Admin passcode<input id="adminPass" type="password" placeholder="Enter passcode"></label><button id="unlockBtn" class="btn" type="button">Unlock editor</button></div>
-<div id="cmsBox" hidden>
-  <article class="block"><h2>Post metadata</h2><p>Fill SEO fields before export.</p>
-    <label>Title<input id="title" required></label>
-    <label>Slug<input id="slug" required placeholder="my-post-slug"></label>
-    <label>Description<textarea id="description"></textarea></label>
-    <label>Category<input id="category"></label>
-    <label>Author<input id="author" value="M2Z Reviews Team"></label>
-    <label>Publish Date<input id="publishDate" type="date"></label>
-    <label>Reading Time<input id="readingTime" placeholder="7 min read"></label>
-    <label>OG Image<input id="ogImage" placeholder="Auto from hero image if empty"></label>
-    <button id="exportBtn" class="btn" type="button">Export post package</button>
-    <p class="meta" id="exportState"></p>
-  </article>
-  <article class="block"><h2>Editor</h2><iframe id="editorFrame" src="/editor/editor.html" title="Page editor" style="width:100%;min-height:760px;border:1px solid var(--border);border-radius:10px;"></iframe></article>
-</div>
-</section><aside class="sidebar"><section class="card"><h3>Workflow</h3><ol><li>Unlock admin.</li><li>Compose article in editor.</li><li>Set metadata.</li><li>Export to <code>/posts/</code> and <code>/data/posts.json</code>.</li></ol></section></aside></main>
-<footer class="site-footer">Internal use only.</footer><script src="/js/global.js" defer></script><script src="/js/admin.js" defer></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin | M2Z Reviews CMS</title>
+  <meta name="description" content="Protected admin page to launch editor, export posts, and update posts index.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://example.com/admin.html">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-page="admin">
+  <header class="site-header">
+    <a class="logo" href="/">M2Z Reviews</a>
+    <nav class="nav">
+      <a href="/">Back to site</a>
+      <button class="theme-toggle" data-theme-toggle>Theme</button>
+    </nav>
+  </header>
+
+  <main class="admin-shell" aria-label="Admin console">
+    <section class="admin-intro">
+      <h1>Admin Content Console</h1>
+      <p class="meta">Use the left panel for post metadata and publishing controls, and use the right panel to build and preview content.</p>
+    </section>
+
+    <section id="authBox" class="admin-auth-card">
+      <h2>Protected Access</h2>
+      <p class="meta">Enter your admin passcode to unlock the editor workspace.</p>
+      <label for="adminPass">Admin passcode</label>
+      <div class="auth-row">
+        <input id="adminPass" type="password" placeholder="Enter passcode">
+        <button id="unlockBtn" class="btn" type="button">Unlock editor</button>
+      </div>
+    </section>
+
+    <section id="cmsBox" class="admin-workspace" hidden>
+      <article class="admin-panel admin-panel-left" aria-label="Post metadata editor">
+        <div class="panel-head">
+          <h2>Post Metadata</h2>
+          <p class="meta">These fields are exported into <code>/data/posts.json</code> and the generated post HTML.</p>
+        </div>
+
+        <form class="admin-form" onsubmit="return false;">
+          <label for="title">Title</label>
+          <input id="title" required>
+
+          <label for="slug">Slug</label>
+          <input id="slug" required placeholder="my-post-slug">
+
+          <label for="description">Description</label>
+          <textarea id="description" rows="4"></textarea>
+
+          <div class="admin-grid-2">
+            <div>
+              <label for="category">Category</label>
+              <input id="category">
+            </div>
+            <div>
+              <label for="author">Author</label>
+              <input id="author" value="M2Z Reviews Team">
+            </div>
+          </div>
+
+          <div class="admin-grid-2">
+            <div>
+              <label for="publishDate">Publish Date</label>
+              <input id="publishDate" type="date">
+            </div>
+            <div>
+              <label for="readingTime">Reading Time</label>
+              <input id="readingTime" placeholder="7 min read">
+            </div>
+          </div>
+
+          <label for="ogImage">OG Image URL</label>
+          <input id="ogImage" placeholder="Auto from hero image if empty">
+
+          <div class="admin-actions">
+            <button id="exportBtn" class="btn" type="button">Export post package</button>
+            <p class="meta" id="exportState"></p>
+          </div>
+        </form>
+      </article>
+
+      <article class="admin-panel admin-panel-right" aria-label="Editor and preview">
+        <div class="panel-head">
+          <h2>Page Builder + Live Preview</h2>
+          <p class="meta">The editor from <code>/editor</code> is embedded below with improved positioning for easier writing and previewing.</p>
+        </div>
+        <iframe id="editorFrame" src="/editor/editor.html" title="Page editor"></iframe>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">Internal use only.</footer>
+  <script src="/js/global.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>

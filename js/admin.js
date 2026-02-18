@@ -81,6 +81,34 @@ async function exportPackage() {
   status.textContent = 'Browser does not support direct folder write. Downloaded HTML + posts.json for manual placement.';
 }
 
+
+function beautifyEmbeddedEditor() {
+  const frame = document.getElementById('editorFrame');
+  if (!frame) return;
+
+  frame.addEventListener('load', () => {
+    try {
+      const doc = frame.contentDocument;
+      if (!doc || doc.getElementById('adminInjectedEditorStyle')) return;
+      const style = doc.createElement('style');
+      style.id = 'adminInjectedEditorStyle';
+      style.textContent = `
+        body { background:#edf2f9 !important; font-family: Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif !important; }
+        .container { height:100vh !important; }
+        .left { width:42% !important; padding:24px !important; border-right:1px solid #dde3ef !important; }
+        .right { width:58% !important; padding:24px !important; }
+        .editor-box { border-radius:12px !important; border:1px solid #dde3ef !important; }
+        input, textarea, select { border-radius:10px !important; }
+        button { border-radius:10px !important; }
+        .preview-wrapper { width:min(860px, 100%) !important; border-radius:16px !important; }
+      `;
+      doc.head.appendChild(style);
+    } catch {
+      // ignore iframe styling errors
+    }
+  });
+}
+
 function initAdmin() {
   const auth = localStorage.getItem(PASSCODE_KEY) === '1';
   const authBox = document.getElementById('authBox');
@@ -103,6 +131,7 @@ function initAdmin() {
     document.getElementById('slug').value = slugify(e.target.value);
   });
   document.getElementById('exportBtn').addEventListener('click', exportPackage);
+  beautifyEmbeddedEditor();
 }
 
 document.addEventListener('DOMContentLoaded', initAdmin);
