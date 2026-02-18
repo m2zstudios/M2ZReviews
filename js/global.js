@@ -4,8 +4,38 @@ const state = { posts: [] };
 
 async function loadPosts() {
   if (state.posts.length) return state.posts;
-  const res = await fetch('/data/posts.json');
-  state.posts = await res.json();
+
+  try {
+    const cfg = window.APPWRITE_CONFIG || {};
+    if (cfg.endpoint && cfg.projectId && cfg.databaseId && cfg.postsCollectionId) {
+      const url = `${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents?limit=100`;
+      const res = await fetch(url, { headers: { 'X-Appwrite-Project': cfg.projectId } });
+      if (res.ok) {
+        const payload = await res.json();
+        if (Array.isArray(payload.documents) && payload.documents.length) {
+          state.posts = payload.documents.map((d) => ({
+            title: d.title,
+            slug: d.slug,
+            description: d.description,
+            ogImage: d.ogImage,
+            heroImage: d.heroImage,
+            heroAlt: d.heroAlt,
+            publishDate: d.publishDate,
+            readingTime: d.readingTime,
+            category: d.category,
+            author: d.author,
+            trending: !!d.trending
+          }));
+        }
+      }
+    }
+  } catch {}
+
+  if (!state.posts.length) {
+    const res = await fetch('/data/posts.json');
+    state.posts = await res.json();
+  }
+
   state.posts.sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
   return state.posts;
 }
