@@ -14,15 +14,29 @@ function applyTheme(theme) {
   const next = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('theme', next);
+  const badge = document.querySelector('[data-theme-badge]');
+  if (badge) badge.textContent = next === 'dark' ? 'Dark' : 'Light';
 }
 
 function initThemeToggle() {
   applyTheme(localStorage.getItem('theme') || 'light');
   const btn = document.querySelector('[data-theme-toggle]');
   if (!btn) return;
+  if (!btn.querySelector('[data-theme-badge]')) {
+    btn.innerHTML = `Theme <span class="theme-badge" data-theme-badge></span>`;
+  }
+  applyTheme(localStorage.getItem('theme') || 'light');
+
   btn.addEventListener('click', () => {
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     applyTheme(next);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.shiftKey && e.key.toLowerCase() === 't') {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+    }
   });
 }
 
@@ -41,6 +55,73 @@ function postCard(post) {
       <div class="meta">${post.publishDate} • ${post.readingTime}</div>
     </div>
   </article>`;
+}
+
+function injectNoticeBar() {
+  if (localStorage.getItem('m2z-hide-notice') === '1') return;
+  if (document.querySelector('.site-notice') || document.body.dataset.page === 'admin') return;
+  const bar = document.createElement('div');
+  bar.className = 'site-notice';
+  bar.innerHTML = `<p>🚀 New: Smarter search, review filters, and richer article tools are live.</p><button type="button" aria-label="Dismiss">×</button>`;
+  document.body.prepend(bar);
+  bar.querySelector('button').addEventListener('click', () => {
+    localStorage.setItem('m2z-hide-notice', '1');
+    bar.remove();
+  });
+}
+
+function initHeaderEnhancements() {
+  const header = document.querySelector('.site-header');
+  const nav = document.querySelector('.nav');
+  if (!header || !nav) return;
+
+  header.classList.add('header-enhanced');
+
+  const path = location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '');
+  nav.querySelectorAll('a').forEach((a) => {
+    const href = (a.getAttribute('href') || '').replace(/\/$/, '');
+    if (href && href === path) a.classList.add('active');
+  });
+
+  if (!header.querySelector('.nav-toggle')) {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'nav-toggle';
+    toggle.setAttribute('aria-label', 'Toggle navigation');
+    toggle.textContent = 'Menu';
+    header.insertBefore(toggle, nav);
+    toggle.addEventListener('click', () => nav.classList.toggle('open'));
+  }
+
+  let lastY = 0;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    header.classList.toggle('compact', y > 8);
+    header.classList.toggle('down', y > lastY && y > 120);
+    lastY = y;
+  });
+}
+
+function injectBreadcrumb() {
+  const page = document.body.dataset.page;
+  if (page === 'home' || page === 'admin' || document.querySelector('.breadcrumb')) return;
+
+  const map = {
+    listing: [{ name: 'Home', href: '/' }, { name: 'Reviews', href: '/reviews.html' }],
+    compare: [{ name: 'Home', href: '/' }, { name: 'Compare', href: '/compare.html' }],
+    about: [{ name: 'Home', href: '/' }, { name: 'About', href: '/about.html' }],
+    post: [{ name: 'Home', href: '/' }, { name: 'Reviews', href: '/reviews.html' }, { name: 'Article', href: location.pathname }]
+  };
+
+  const items = map[page];
+  if (!items) return;
+  const nav = document.createElement('nav');
+  nav.className = 'breadcrumb';
+  nav.setAttribute('aria-label', 'Breadcrumb');
+  nav.innerHTML = items.map((item, idx) => idx === items.length - 1 ? `<span>${item.name}</span>` : `<a href="${item.href}">${item.name}</a>`).join('<i>/</i>');
+
+  const header = document.querySelector('.site-header');
+  header?.insertAdjacentElement('afterend', nav);
 }
 
 function injectSearch(posts) {
@@ -108,6 +189,56 @@ function injectSearch(posts) {
   nav.prepend(wrap);
 }
 
+function enhanceFooter(posts) {
+  if (document.body.dataset.page === 'admin') return;
+  const footer = document.querySelector('.site-footer');
+  if (!footer || footer.dataset.enhanced === '1') return;
+  const lastUpdated = posts[0]?.publishDate || new Date().toISOString().slice(0, 10);
+  const year = new Date().getFullYear();
+
+  footer.dataset.enhanced = '1';
+  footer.innerHTML = `
+    <section class="footer-grid">
+      <div>
+        <h3>M2Z Reviews</h3>
+        <p>Independent product analysis with transparent testing and practical verdicts.</p>
+        <p class="meta">Last content update: ${lastUpdated}</p>
+      </div>
+      <div>
+        <h4>Navigate</h4>
+        <ul>
+          <li><a href="/reviews.html">Reviews</a></li>
+          <li><a href="/compare.html">Compare</a></li>
+          <li><a href="/about.html">About</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Editorial</h4>
+        <ul>
+          <li><a href="/about.html">Methodology</a></li>
+          <li><a href="/about.html">Disclosure</a></li>
+          <li><a href="/about.html">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Newsletter</h4>
+        <form class="footer-news" data-footer-news>
+          <input type="email" required placeholder="Email address" aria-label="Email address" />
+          <button class="btn" type="submit">Subscribe</button>
+        </form>
+        <p class="meta" data-news-status></p>
+      </div>
+    </section>
+    <p class="footer-bottom">© ${year} M2Z Reviews. All rights reserved.</p>
+  `;
+
+  footer.querySelector('[data-footer-news]')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const status = footer.querySelector('[data-news-status]');
+    status.textContent = 'Thanks! You are subscribed.';
+  });
+}
+
 function setupUtilityUi() {
   if (!document.querySelector('.back-top')) {
     const btn = document.createElement('button');
@@ -134,9 +265,13 @@ function setupUtilityUi() {
       copy.className = 'copy-link';
       copy.textContent = 'Copy link';
       copy.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(location.href);
-        copy.textContent = 'Copied';
-        setTimeout(() => (copy.textContent = 'Copy link'), 1000);
+        try {
+          await navigator.clipboard.writeText(location.href);
+          copy.textContent = 'Copied';
+          setTimeout(() => (copy.textContent = 'Copy link'), 1000);
+        } catch {
+          copy.textContent = 'Cannot copy';
+        }
       });
       title.insertAdjacentElement('afterend', copy);
     }
@@ -235,6 +370,9 @@ async function initPostPage() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initThemeToggle();
+  injectNoticeBar();
+  initHeaderEnhancements();
+  injectBreadcrumb();
   setupUtilityUi();
 
   const posts = await loadPosts();
@@ -254,4 +392,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderList(document.querySelector('[data-sidebar-trending]'), posts.filter((p) => p.trending).slice(0, 5));
     injectSearch(posts);
   }
+
+  enhanceFooter(posts);
 });
