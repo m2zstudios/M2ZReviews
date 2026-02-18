@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /editor/
 Disallow: /admin.html
+Disallow: /admin-editor.html
 
 Sitemap: https://example.com/sitemap.xml
