@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Admin Login | M2Z Reviews CMS</title>
-  <meta name="description" content="Protected login and account creation for M2Z Reviews content management.">
+  <meta name="description" content="Protected admin login for M2Z Reviews content management.">
   <meta name="robots" content="noindex,nofollow">
   <link rel="canonical" href="https://example.com/admin.html">
   <link rel="stylesheet" href="/css/style.css">
@@ -21,8 +21,8 @@
   <main class="admin-login-shell">
     <section class="admin-login-card" aria-label="Admin login">
       <p class="badge">Secure Access</p>
-      <h1>Sign in / Create account</h1>
-      <p class="meta">Appwrite account login for admin editor access.</p>
+      <h1>Sign in</h1>
+      <p class="meta">Admin accounts are managed from backend only.</p>
 
       <label for="adminEmail">Email</label>
       <input id="adminEmail" type="email" placeholder="you@example.com">
@@ -30,13 +30,7 @@
       <label for="adminPassword">Password</label>
       <input id="adminPassword" type="password" placeholder="••••••••">
 
-      <label for="adminName">Name (for signup)</label>
-      <input id="adminName" type="text" placeholder="Meraz Ahmed">
-
-      <div class="admin-grid-2">
-        <button id="loginBtn" class="btn" type="button">Login</button>
-        <button id="signupBtn" class="btn" type="button">Create account</button>
-      </div>
+      <button id="loginBtn" class="btn" type="button">Login</button>
       <p id="authError" class="admin-error" hidden></p>
     </section>
   </main>

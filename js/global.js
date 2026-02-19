@@ -227,7 +227,8 @@ function injectAdAreas(page) {
     if (target) {
       const ad = document.createElement('section');
       ad.className = 'ad-area';
-      ad.innerHTML = '<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80" alt="Sponsored banner advertisement"></a>';
+      const homeAd = localStorage.getItem('m2z-home-ad-url') || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80';
+      ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="${homeAd}" alt="Sponsored banner advertisement"></a>`;
       target.parentElement.insertBefore(ad, target);
     }
   }
@@ -237,7 +238,8 @@ function injectAdAreas(page) {
     if (article && !article.querySelector('.ad-inline')) {
       const ad = document.createElement('section');
       ad.className = 'ad-area ad-inline';
-      ad.innerHTML = '<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80" alt="Sponsored product ad"></a>';
+      const postAd = localStorage.getItem('m2z-post-ad-url') || 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80';
+      ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="${postAd}" alt="Sponsored product ad"></a>`;
       const related = article.querySelector('.related');
       article.insertBefore(ad, related || null);
     }
