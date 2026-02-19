@@ -153,8 +153,10 @@ function injectBreadcrumb() {
 }
 
 
-function applyHomeMetaSettings(settings) {
-  if (document.body.dataset.page !== 'home' || !settings) return;
+function applyGlobalMetaSettings(settings) {
+  if (!settings) return;
+  const page = document.body.dataset.page;
+  if (['post', 'about', 'compare', 'admin'].includes(page)) return;
   if (settings.SiteTitle) document.title = settings.SiteTitle;
   if (settings.MetaDesc) {
     const m = document.querySelector('meta[name="description"]');
@@ -266,7 +268,8 @@ function injectAdAreas(page) {
       const ad = document.createElement('section');
       ad.className = 'ad-area';
       const homeAd = localStorage.getItem('m2z-home-ad-url') || state.settings?.HPAdURL || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80';
-      ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="${homeAd}" alt="Sponsored banner advertisement"></a>`;
+      const homeAdRed = localStorage.getItem('m2z-home-ad-red-url') || state.settings?.HPAdRedURL || "#";
+      ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="${homeAdRed}" target="_blank" rel="nofollow noopener"><img loading="lazy" src="${homeAd}" alt="Sponsored banner advertisement"></a>`;
       target.parentElement.insertBefore(ad, target);
     }
   }
@@ -277,7 +280,8 @@ function injectAdAreas(page) {
       const ad = document.createElement('section');
       ad.className = 'ad-area ad-inline';
       const postAd = localStorage.getItem('m2z-post-ad-url') || state.settings?.PPAdURL || 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80';
-      ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="${postAd}" alt="Sponsored product ad"></a>`;
+      const postAdRed = localStorage.getItem('m2z-post-ad-red-url') || state.settings?.PPAdRedURL || "#";
+      ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="${postAdRed}" target="_blank" rel="nofollow noopener"><img loading="lazy" src="${postAd}" alt="Sponsored product ad"></a>`;
       const related = article.querySelector('.related');
       article.insertBefore(ad, related || null);
     }
@@ -470,7 +474,7 @@ function renderReviewsControls(posts) {
 
 async function initHomepage() {
   const settings = await loadSettings();
-  applyHomeMetaSettings(settings);
+  applyGlobalMetaSettings(settings);
   const posts = await loadPosts();
   const latestGrid = document.querySelector('[data-latest-grid]');
   if (latestGrid) latestGrid.innerHTML = posts.slice(0, 6).map(postCard).join('');
@@ -487,7 +491,7 @@ async function initPostPage() {
   const slug = document.body.dataset.slug;
   if (!slug) return;
   const settings = await loadSettings();
-  applyHomeMetaSettings(settings);
+  applyGlobalMetaSettings(settings);
   const posts = await loadPosts();
   const current = posts.find((p) => p.slug === slug);
   if (!current) return;
@@ -507,7 +511,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupUtilityUi();
 
   const settings = await loadSettings();
-  applyHomeMetaSettings(settings);
+  applyGlobalMetaSettings(settings);
   const posts = await loadPosts();
   const page = document.body.dataset.page;
 

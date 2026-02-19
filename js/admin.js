@@ -298,7 +298,6 @@ async function initDashboardPage() {
   drawBarChart(document.getElementById('categoryChart'), Object.keys(categoryCounts), Object.values(categoryCounts), '#2456e8');
   drawBarChart(document.getElementById('engagementChart'), top.map((p) => p.slug || 'post'), top.map((p) => Number(p._stats.likes || 0) + Number(p._stats.shares || 0) + Number(p._stats.views || 0)), '#0ea5a4');
 
-  // subscribers
   const subsList = document.getElementById('subscriberList');
   try {
     const subs = await databases.listDocuments(cfg.databaseId, cfg.newsletterSubscribersCollectionId, [sdk.Query.limit(200)]);
@@ -307,48 +306,50 @@ async function initDashboardPage() {
     subsList.innerHTML = '<li class="meta">Unable to load subscribers.</li>';
   }
 
-  // ad settings local storage
+  // unified settings panel
   const homeAdUrl = document.getElementById('homeAdUrl');
+  const homeAdRedUrl = document.getElementById('homeAdRedUrl');
   const postAdUrl = document.getElementById('postAdUrl');
-  const adsState = document.getElementById('adsState');
-  homeAdUrl.value = localStorage.getItem('m2z-home-ad-url') || '';
-  postAdUrl.value = localStorage.getItem('m2z-post-ad-url') || '';
-  document.getElementById('saveAdsBtn').addEventListener('click', () => {
-    localStorage.setItem('m2z-home-ad-url', homeAdUrl.value.trim());
-    localStorage.setItem('m2z-post-ad-url', postAdUrl.value.trim());
-    adsState.textContent = 'Ad URLs saved for this browser/session.';
-  });
-  // meta settings
+  const postAdRedUrl = document.getElementById('postAdRedUrl');
   const siteTitle = document.getElementById('siteTitle');
   const siteMetaDesc = document.getElementById('siteMetaDesc');
   const siteOgImage = document.getElementById('siteOgImage');
-  const metaState = document.getElementById('metaState');
+  const settingsState = document.getElementById('settingsState');
+
   try {
     const st = await loadSettingsDocument();
     if (st) {
+      homeAdUrl.value = st.HPAdURL || '';
+      homeAdRedUrl.value = st.HPAdRedURL || '';
+      postAdUrl.value = st.PPAdURL || '';
+      postAdRedUrl.value = st.PPAdRedURL || '';
       siteTitle.value = st.SiteTitle || '';
       siteMetaDesc.value = st.MetaDesc || '';
       siteOgImage.value = st.OGImage || '';
-      if (st.HPAdURL && !homeAdUrl.value) homeAdUrl.value = st.HPAdURL;
-      if (st.PPAdURL && !postAdUrl.value) postAdUrl.value = st.PPAdURL;
     }
   } catch {}
 
-  document.getElementById('saveMetaBtn').addEventListener('click', async () => {
+  document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
     try {
-      await saveSettingsDocument({
+      const payload = {
+        HPAdURL: homeAdUrl.value.trim(),
+        HPAdRedURL: homeAdRedUrl.value.trim(),
+        PPAdURL: postAdUrl.value.trim(),
+        PPAdRedURL: postAdRedUrl.value.trim(),
         SiteTitle: siteTitle.value.trim(),
         MetaDesc: siteMetaDesc.value.trim(),
-        OGImage: siteOgImage.value.trim(),
-        HPAdURL: homeAdUrl.value.trim(),
-        PPAdURL: postAdUrl.value.trim()
-      });
-      metaState.textContent = 'Meta settings saved.';
+        OGImage: siteOgImage.value.trim()
+      };
+      await saveSettingsDocument(payload);
+      localStorage.setItem('m2z-home-ad-url', payload.HPAdURL || '');
+      localStorage.setItem('m2z-home-ad-red-url', payload.HPAdRedURL || '');
+      localStorage.setItem('m2z-post-ad-url', payload.PPAdURL || '');
+      localStorage.setItem('m2z-post-ad-red-url', payload.PPAdRedURL || '');
+      settingsState.textContent = 'Settings updated successfully.';
     } catch (e) {
-      metaState.textContent = `Meta save failed: ${e.message || 'error'}`;
+      settingsState.textContent = `Settings update failed: ${e.message || 'error'}`;
     }
   });
-
 }
 
 async function initLoginPage() {

@@ -24,9 +24,7 @@
       <h2>Admin</h2>
       <a class="active" href="#" data-tab="dashboard">Dashboard</a>
       <a href="/admin-editor.html">Create Post</a>
-      <a href="#" data-tab="ads">Manage Ads</a>
       <a href="#" data-tab="settings">Settings</a>
-      <a href="#" data-tab="meta">Meta Settings</a>
       <a href="#" data-tab="subscribers">Subscribers</a>
     </aside>
 
@@ -43,33 +41,35 @@
           <ul class="list" id="topPosts"></ul>
         </article>
       </section>
-
-      <section data-panel="ads" hidden>
-        <h1>Manage Ads</h1>
-        <article class="admin-panel">
-          <label>Homepage Ad URL<input id="homeAdUrl" placeholder="https://..."></label>
-          <label>Post Inline Ad URL<input id="postAdUrl" placeholder="https://..."></label>
-          <button id="saveAdsBtn" class="btn btn-anim" type="button">Save ad URLs</button>
-          <p class="meta" id="adsState"></p>
-        </article>
-      </section>
-
       <section data-panel="settings" hidden>
         <h1>Settings</h1>
-        <article class="admin-panel"><p class="meta">Project: <span id="projectName"></span></p><p class="meta">Endpoint: <span id="projectEndpoint"></span></p></article>
-      </section>
-
-      <section data-panel="meta" hidden>
-        <h1>Meta Settings</h1>
         <article class="admin-panel admin-form">
-          <label for="siteTitle">Homepage Title</label>
+          <p class="meta">Project: <span id="projectName"></span></p>
+          <p class="meta">Endpoint: <span id="projectEndpoint"></span></p>
+
+          <label for="homeAdUrl">Home Page Ad Image URL</label>
+          <input id="homeAdUrl" placeholder="https://...">
+
+          <label for="homeAdRedUrl">Home Page Ad Redirect URL</label>
+          <input id="homeAdRedUrl" placeholder="https://...">
+
+          <label for="postAdUrl">Post/Preview Page Ad Image URL</label>
+          <input id="postAdUrl" placeholder="https://...">
+
+          <label for="postAdRedUrl">Post/Preview Page Ad Redirect URL</label>
+          <input id="postAdRedUrl" placeholder="https://...">
+
+          <label for="siteTitle">Global Site Title</label>
           <input id="siteTitle" placeholder="M2Z Reviews | Trusted Tech Reviews & Comparisons">
+
           <label for="siteMetaDesc">Site Meta Description</label>
           <textarea id="siteMetaDesc" rows="3"></textarea>
-          <label for="siteOgImage">Homepage OG Image URL</label>
+
+          <label for="siteOgImage">OG Image URL</label>
           <input id="siteOgImage" placeholder="https://...">
-          <button id="saveMetaBtn" class="btn btn-anim" type="button">Save meta settings</button>
-          <p class="meta" id="metaState"></p>
+
+          <button id="saveSettingsBtn" class="btn btn-anim" type="button">Update Settings</button>
+          <p class="meta" id="settingsState"></p>
         </article>
       </section>
 
