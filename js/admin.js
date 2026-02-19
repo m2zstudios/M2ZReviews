@@ -184,22 +184,70 @@ function parseStats(v) {
 
 function drawBarChart(canvas, labels, values, color = '#2456e8') {
   const ctx = canvas.getContext('2d');
-  const w = canvas.width = canvas.clientWidth * window.devicePixelRatio;
-  const h = canvas.height = canvas.clientHeight * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  const cssW = canvas.clientWidth || 400;
+  const cssH = canvas.clientHeight || 240;
+  canvas.width = cssW * window.devicePixelRatio;
+  canvas.height = cssH * window.devicePixelRatio;
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const padL = 36;
+  const padR = 16;
+  const padT = 16;
+  const padB = 38;
+  const chartW = cssW - padL - padR;
+  const chartH = cssH - padT - padB;
+
   const max = Math.max(...values, 1);
-  const barW = (canvas.clientWidth - 40) / Math.max(values.length, 1) - 10;
+  ctx.strokeStyle = '#c9d2e8';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i += 1) {
+    const y = padT + (chartH * i) / 4;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(cssW - padR, y);
+    ctx.stroke();
+  }
+
+  const barSpace = chartW / Math.max(values.length, 1);
+  const barW = Math.max(14, Math.min(46, barSpace * 0.62));
+
   values.forEach((v, i) => {
-    const x = 20 + i * (barW + 10);
-    const bh = ((canvas.clientHeight - 50) * v) / max;
-    const y = canvas.clientHeight - bh - 24;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, barW, bh);
-    ctx.fillStyle = '#7a8295';
-    ctx.font = '12px Inter';
-    ctx.fillText(String(labels[i]).slice(0, 10), x, canvas.clientHeight - 8);
+    const x = padL + i * barSpace + (barSpace - barW) / 2;
+    const h = (chartH * v) / max;
+    const y = padT + chartH - h;
+
+    const grad = ctx.createLinearGradient(0, y, 0, y + h);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, '#7ea0ff');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, barW, h);
+
+    ctx.fillStyle = '#6f7891';
+    ctx.font = '11px Inter';
+    ctx.fillText(String(labels[i]).slice(0, 10), x, cssH - 12);
+
+    ctx.fillStyle = '#1e2433';
+    ctx.font = '11px Inter';
+    ctx.fillText(String(v), x, y - 4);
   });
+}
+
+async function loadSettingsDocument() {
+  try {
+    const docs = await databases.listDocuments(cfg.databaseId, cfg.settingsCollectionId, [sdk.Query.limit(1)]);
+    return docs.documents?.[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveSettingsDocument(data) {
+  const existing = await loadSettingsDocument();
+  if (existing?.$id) {
+    return databases.updateDocument(cfg.databaseId, cfg.settingsCollectionId, existing.$id, data);
+  }
+  return databases.createDocument(cfg.databaseId, cfg.settingsCollectionId, sdk.ID.unique(), data);
 }
 
 async function initDashboardPage() {
@@ -254,7 +302,7 @@ async function initDashboardPage() {
   const subsList = document.getElementById('subscriberList');
   try {
     const subs = await databases.listDocuments(cfg.databaseId, cfg.newsletterSubscribersCollectionId, [sdk.Query.limit(200)]);
-    subsList.innerHTML = (subs.documents || []).map((d) => `<li>${d.email || '-'}</li>`).join('') || '<li class="meta">No subscribers yet.</li>';
+    subsList.innerHTML = (subs.documents || []).map((d, i) => `<li><span>${i+1}. ${d.email || '-'}</span><a class="btn btn-anim" target="_blank" rel="noopener" href="https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(d.email || '')}">💌</a></li>`).join('') || '<li class="meta">No subscribers yet.</li>';
   } catch {
     subsList.innerHTML = '<li class="meta">Unable to load subscribers.</li>';
   }
@@ -270,6 +318,37 @@ async function initDashboardPage() {
     localStorage.setItem('m2z-post-ad-url', postAdUrl.value.trim());
     adsState.textContent = 'Ad URLs saved for this browser/session.';
   });
+  // meta settings
+  const siteTitle = document.getElementById('siteTitle');
+  const siteMetaDesc = document.getElementById('siteMetaDesc');
+  const siteOgImage = document.getElementById('siteOgImage');
+  const metaState = document.getElementById('metaState');
+  try {
+    const st = await loadSettingsDocument();
+    if (st) {
+      siteTitle.value = st.SiteTitle || '';
+      siteMetaDesc.value = st.MetaDesc || '';
+      siteOgImage.value = st.OGImage || '';
+      if (st.HPAdURL && !homeAdUrl.value) homeAdUrl.value = st.HPAdURL;
+      if (st.PPAdURL && !postAdUrl.value) postAdUrl.value = st.PPAdURL;
+    }
+  } catch {}
+
+  document.getElementById('saveMetaBtn').addEventListener('click', async () => {
+    try {
+      await saveSettingsDocument({
+        SiteTitle: siteTitle.value.trim(),
+        MetaDesc: siteMetaDesc.value.trim(),
+        OGImage: siteOgImage.value.trim(),
+        HPAdURL: homeAdUrl.value.trim(),
+        PPAdURL: postAdUrl.value.trim()
+      });
+      metaState.textContent = 'Meta settings saved.';
+    } catch (e) {
+      metaState.textContent = `Meta save failed: ${e.message || 'error'}`;
+    }
+  });
+
 }
 
 async function initLoginPage() {

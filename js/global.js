@@ -1,6 +1,6 @@
 const SITE_URL = 'https://example.com';
 
-const state = { posts: [] };
+const state = { posts: [], settings: null };
 
 async function loadPosts() {
   if (state.posts.length) return state.posts;
@@ -48,6 +48,26 @@ async function loadPosts() {
 
   state.posts.sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
   return state.posts;
+}
+
+
+async function loadSettings() {
+  if (state.settings) return state.settings;
+  const cfg = window.APPWRITE_CONFIG || {};
+  try {
+    if (cfg.endpoint && cfg.projectId && cfg.databaseId && cfg.settingsCollectionId) {
+      const res = await fetch(`${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.settingsCollectionId}/documents?limit=1`, {
+        headers: { 'X-Appwrite-Project': cfg.projectId }
+      });
+      if (res.ok) {
+        const payload = await res.json();
+        state.settings = payload.documents?.[0] || {};
+        return state.settings;
+      }
+    }
+  } catch {}
+  state.settings = {};
+  return state.settings;
 }
 
 function applyTheme(theme) {
@@ -130,6 +150,24 @@ function injectBreadcrumb() {
   nav.setAttribute('aria-label', 'Breadcrumb');
   nav.innerHTML = items.map((item, idx) => idx === items.length - 1 ? `<span>${item.name}</span>` : `<a href="${item.href}">${item.name}</a>`).join('<i>/</i>');
   document.querySelector('.site-header')?.insertAdjacentElement('afterend', nav);
+}
+
+
+function applyHomeMetaSettings(settings) {
+  if (document.body.dataset.page !== 'home' || !settings) return;
+  if (settings.SiteTitle) document.title = settings.SiteTitle;
+  if (settings.MetaDesc) {
+    const m = document.querySelector('meta[name="description"]');
+    const ogd = document.querySelector('meta[property="og:description"]');
+    if (m) m.setAttribute('content', settings.MetaDesc);
+    if (ogd) ogd.setAttribute('content', settings.MetaDesc);
+  }
+  if (settings.OGImage) {
+    const ogi = document.querySelector('meta[property="og:image"]');
+    const tw = document.querySelector('meta[name="twitter:image"]');
+    if (ogi) ogi.setAttribute('content', settings.OGImage);
+    if (tw) tw.setAttribute('content', settings.OGImage);
+  }
 }
 
 function injectSearch(posts) {
@@ -227,7 +265,7 @@ function injectAdAreas(page) {
     if (target) {
       const ad = document.createElement('section');
       ad.className = 'ad-area';
-      const homeAd = localStorage.getItem('m2z-home-ad-url') || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80';
+      const homeAd = localStorage.getItem('m2z-home-ad-url') || state.settings?.HPAdURL || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1600&q=80';
       ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="${homeAd}" alt="Sponsored banner advertisement"></a>`;
       target.parentElement.insertBefore(ad, target);
     }
@@ -238,7 +276,7 @@ function injectAdAreas(page) {
     if (article && !article.querySelector('.ad-inline')) {
       const ad = document.createElement('section');
       ad.className = 'ad-area ad-inline';
-      const postAd = localStorage.getItem('m2z-post-ad-url') || 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80';
+      const postAd = localStorage.getItem('m2z-post-ad-url') || state.settings?.PPAdURL || 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80';
       ad.innerHTML = `<span class="ad-badge">Advertisement</span><a href="#" rel="nofollow"><img loading="lazy" src="${postAd}" alt="Sponsored product ad"></a>`;
       const related = article.querySelector('.related');
       article.insertBefore(ad, related || null);
@@ -272,6 +310,31 @@ function bindLightboxOnArticle() {
       lightbox.classList.add('open');
     });
   });
+}
+
+
+async function incrementPostView(slug) {
+  const cfg = window.APPWRITE_CONFIG || {};
+  if (!cfg.endpoint || !cfg.projectId || !cfg.databaseId || !cfg.postsCollectionId || !slug) return;
+  try {
+    const listRes = await fetch(`${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents?limit=100`, {
+      headers: { 'X-Appwrite-Project': cfg.projectId }
+    });
+    if (!listRes.ok) return;
+    const payload = await listRes.json();
+    const doc = (payload.documents || []).find((d) => d.slug === slug);
+    if (!doc?.$id) return;
+    let st = { likes: 0, shares: 0, views: 0 };
+    if (typeof doc.stats === 'string') {
+      try { st = { ...st, ...JSON.parse(doc.stats) }; } catch {}
+    } else if (doc.stats && typeof doc.stats === 'object') st = { ...st, ...doc.stats };
+    st.views = Number(st.views || 0) + 1;
+    await fetch(`${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents/${doc.$id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': cfg.projectId },
+      body: JSON.stringify({ data: { stats: JSON.stringify(st) } })
+    });
+  } catch {}
 }
 
 async function updatePostStats(slug, stats) {
@@ -311,7 +374,8 @@ function setupPostEnhancements() {
   }
 
   const slug = document.body.dataset.slug;
-  const post = state.posts.find((p) => p.slug === slug) || { stats: { likes: 0, shares: 0 } };
+  const post = state.posts.find((p) => p.slug === slug) || { stats: { likes: 0, shares: 0, views: 0 } };
+  incrementPostView(slug);
   const stats = { likes: Number(post.stats?.likes || 0), shares: Number(post.stats?.shares || 0) };
 
   if (meta && !document.querySelector('.author-core')) {
@@ -405,6 +469,8 @@ function renderReviewsControls(posts) {
 }
 
 async function initHomepage() {
+  const settings = await loadSettings();
+  applyHomeMetaSettings(settings);
   const posts = await loadPosts();
   const latestGrid = document.querySelector('[data-latest-grid]');
   if (latestGrid) latestGrid.innerHTML = posts.slice(0, 6).map(postCard).join('');
@@ -420,6 +486,8 @@ async function initHomepage() {
 async function initPostPage() {
   const slug = document.body.dataset.slug;
   if (!slug) return;
+  const settings = await loadSettings();
+  applyHomeMetaSettings(settings);
   const posts = await loadPosts();
   const current = posts.find((p) => p.slug === slug);
   if (!current) return;
@@ -438,6 +506,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   injectBreadcrumb();
   setupUtilityUi();
 
+  const settings = await loadSettings();
+  applyHomeMetaSettings(settings);
   const posts = await loadPosts();
   const page = document.body.dataset.page;
 

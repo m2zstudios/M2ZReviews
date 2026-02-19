@@ -282,3 +282,13 @@ img { max-width:100%; display:block; }
   .admin-kpi-grid { grid-template-columns:1fr 1fr; }
   .admin-chart-grid { grid-template-columns:1fr; }
 }
+
+
+button, .btn { transition: transform .12s ease, box-shadow .16s ease, opacity .16s ease; }
+button:active, .btn:active { transform: scale(0.97); }
+.btn-anim:hover { box-shadow: 0 8px 20px rgba(36, 86, 232, 0.28); }
+.subscriber-list { margin:0; padding-left:1.2rem; display:grid; gap:.5rem; }
+.subscriber-list li { display:flex; align-items:center; justify-content:space-between; gap:.7rem; border:1px solid var(--border); background:var(--surface-2); border-radius:10px; padding:.45rem .6rem; }
+.subscriber-list .btn { padding:.34rem .6rem; border-radius:999px; }
+.admin-panel { box-shadow: var(--shadow); }
+.admin-kpi strong { font-size:1.12rem; }

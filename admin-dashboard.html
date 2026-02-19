@@ -35,8 +35,8 @@
         <h1>Dashboard</h1>
         <div class="admin-kpi-grid" id="kpis"></div>
         <div class="admin-chart-grid">
-          <article class="admin-panel"><h3>Posts by Category</h3><canvas id="categoryChart" height="220"></canvas></article>
-          <article class="admin-panel"><h3>Engagement (Top 5)</h3><canvas id="engagementChart" height="220"></canvas></article>
+          <article class="admin-panel"><h3>Posts by Category</h3><canvas id="categoryChart" height="260"></canvas></article>
+          <article class="admin-panel"><h3>Engagement (Views + Likes + Shares)</h3><canvas id="engagementChart" height="260"></canvas></article>
         </div>
         <article class="admin-panel">
           <h3>Top-performing Posts</h3>
@@ -49,7 +49,7 @@
         <article class="admin-panel">
           <label>Homepage Ad URL<input id="homeAdUrl" placeholder="https://..."></label>
           <label>Post Inline Ad URL<input id="postAdUrl" placeholder="https://..."></label>
-          <button id="saveAdsBtn" class="btn" type="button">Save ad URLs</button>
+          <button id="saveAdsBtn" class="btn btn-anim" type="button">Save ad URLs</button>
           <p class="meta" id="adsState"></p>
         </article>
       </section>
@@ -61,12 +61,23 @@
 
       <section data-panel="meta" hidden>
         <h1>Meta Settings</h1>
-        <article class="admin-panel"><p class="meta">Use editor fields (title, description, OG image) per post. Global meta remains in page templates.</p></article>
+        <article class="admin-panel admin-form">
+          <label for="siteTitle">Homepage Title</label>
+          <input id="siteTitle" placeholder="M2Z Reviews | Trusted Tech Reviews & Comparisons">
+          <label for="siteMetaDesc">Site Meta Description</label>
+          <textarea id="siteMetaDesc" rows="3"></textarea>
+          <label for="siteOgImage">Homepage OG Image URL</label>
+          <input id="siteOgImage" placeholder="https://...">
+          <button id="saveMetaBtn" class="btn btn-anim" type="button">Save meta settings</button>
+          <p class="meta" id="metaState"></p>
+        </article>
       </section>
 
       <section data-panel="subscribers" hidden>
         <h1>Subscribers</h1>
-        <article class="admin-panel"><ul class="list" id="subscriberList"></ul></article>
+        <article class="admin-panel">
+          <ol class="subscriber-list" id="subscriberList"></ol>
+        </article>
       </section>
     </section>
   </main>

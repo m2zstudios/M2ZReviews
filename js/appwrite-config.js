@@ -5,5 +5,6 @@ window.APPWRITE_CONFIG = {
   postsCollectionId: 'posts',
   usersCollectionId: 'users',
   newsletterSubscribersCollectionId: 'newsletter-subscribers',
+  settingsCollectionId: 'settings',
   bucketId: 'post-content'
 };
