@@ -297,6 +297,12 @@ async function initDashboardPage() {
 
   drawBarChart(document.getElementById('categoryChart'), Object.keys(categoryCounts), Object.values(categoryCounts), '#2456e8');
   drawBarChart(document.getElementById('engagementChart'), top.map((p) => p.slug || 'post'), top.map((p) => Number(p._stats.likes || 0) + Number(p._stats.shares || 0) + Number(p._stats.views || 0)), '#0ea5a4');
+  drawBarChart(
+    document.getElementById('viewsChart'),
+    top.map((p) => p.slug || 'post'),
+    top.map((p) => Number(p._stats.views || 0)),
+    '#7c3aed'
+  );
 
   const subsList = document.getElementById('subscriberList');
   try {
@@ -314,6 +320,7 @@ async function initDashboardPage() {
   const siteTitle = document.getElementById('siteTitle');
   const siteMetaDesc = document.getElementById('siteMetaDesc');
   const siteOgImage = document.getElementById('siteOgImage');
+  const siteHeroImage = document.getElementById('siteHeroImage');
   const settingsState = document.getElementById('settingsState');
 
   try {
@@ -326,6 +333,7 @@ async function initDashboardPage() {
       siteTitle.value = st.SiteTitle || '';
       siteMetaDesc.value = st.MetaDesc || '';
       siteOgImage.value = st.OGImage || '';
+      siteHeroImage.value = st.HomeHeroImage || '';
     }
   } catch {}
 
@@ -338,7 +346,8 @@ async function initDashboardPage() {
         PPAdRedURL: postAdRedUrl.value.trim(),
         SiteTitle: siteTitle.value.trim(),
         MetaDesc: siteMetaDesc.value.trim(),
-        OGImage: siteOgImage.value.trim()
+        OGImage: siteOgImage.value.trim(),
+        HomeHeroImage: siteHeroImage.value.trim()
       };
       await saveSettingsDocument(payload);
       localStorage.setItem('m2z-home-ad-url', payload.HPAdURL || '');

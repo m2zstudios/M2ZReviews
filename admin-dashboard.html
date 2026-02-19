@@ -35,6 +35,7 @@
         <div class="admin-chart-grid">
           <article class="admin-panel"><h3>Posts by Category</h3><canvas id="categoryChart" height="260"></canvas></article>
           <article class="admin-panel"><h3>Engagement (Views + Likes + Shares)</h3><canvas id="engagementChart" height="260"></canvas></article>
+          <article class="admin-panel"><h3>Top Views</h3><canvas id="viewsChart" height="260"></canvas></article>
         </div>
         <article class="admin-panel">
           <h3>Top-performing Posts</h3>
@@ -67,6 +68,9 @@
 
           <label for="siteOgImage">OG Image URL</label>
           <input id="siteOgImage" placeholder="https://...">
+
+          <label for="siteHeroImage">Home Hero Image URL</label>
+          <input id="siteHeroImage" placeholder="https://...">
 
           <button id="saveSettingsBtn" class="btn btn-anim" type="button">Update Settings</button>
           <p class="meta" id="settingsState"></p>
