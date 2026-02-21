@@ -1,6 +1,13 @@
 const SITE_URL = process.env.SITE_URL || 'https://m2zreviews.netlify.app';
 const FALLBACK_HERO = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80';
 
+const DEFAULTS = {
+  endpoint: 'https://sfo.cloud.appwrite.io/v1',
+  projectId: 'm2z-reviews',
+  databaseId: 'm2z-reviews',
+  postsCollectionId: 'posts'
+};
+
 const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (m) => ({
   '&': '&amp;',
   '<': '&lt;',
@@ -8,6 +15,13 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (m) => ({
   '"': '&quot;',
   "'": '&#39;'
 }[m]));
+
+function normalizeEndpoint(endpoint = '') {
+  const trimmed = String(endpoint || '').trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/$/, '');
+  return `https://${trimmed.replace(/\/$/, '')}`;
+}
 
 function htmlPage({ title, description = '', canonical = SITE_URL, robots = 'index,follow', body = '', bodyAttrs = '', image = FALLBACK_HERO, schema = null }) {
   return `<!doctype html>
@@ -104,13 +118,71 @@ function renderPost(post, slug) {
 function extractSlug(event) {
   const fromQuery = event?.queryStringParameters?.slug;
   if (fromQuery) return String(fromQuery).trim();
-
   const fromPath = event?.pathParameters?.slug;
   if (fromPath) return String(fromPath).trim();
 
-  const path = event?.rawUrl ? new URL(event.rawUrl).pathname : (event?.path || '');
-  const match = String(path).match(/^\/post\/([^/?#]+)/);
-  return match ? decodeURIComponent(match[1]).trim() : '';
+  try {
+    const path = event?.rawUrl ? new URL(event.rawUrl).pathname : (event?.path || '');
+    const match = String(path).match(/^\/post\/([^/?#]+)/);
+    return match ? decodeURIComponent(match[1]).trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+function getConfig() {
+  return {
+    endpoint: normalizeEndpoint(process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || DEFAULTS.endpoint),
+    projectId: process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID || DEFAULTS.projectId,
+    databaseId: process.env.APPWRITE_DATABASE_ID || process.env.VITE_APPWRITE_DATABASE_ID || DEFAULTS.databaseId,
+    postsCollectionId: process.env.APPWRITE_POSTS_COLLECTION_ID || process.env.VITE_APPWRITE_POSTS_COLLECTION_ID || DEFAULTS.postsCollectionId,
+    apiKey: process.env.APPWRITE_API_KEY || process.env.VITE_APPWRITE_API_KEY || ''
+  };
+}
+
+async function queryPostBySlug(cfg, slug) {
+  const queryVariants = [
+    [`equal("slug",["${slug}"])`, 'limit(1)'],
+    [`equal("slug","${slug}")`, 'limit(1)']
+  ];
+
+  for (const queries of queryVariants) {
+    const params = new URLSearchParams();
+    queries.forEach((q) => params.append('queries[]', q));
+    const url = `${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents?${params.toString()}`;
+
+    const res = await fetch(url, {
+      headers: {
+        'X-Appwrite-Project': cfg.projectId,
+        ...(cfg.apiKey ? { 'X-Appwrite-Key': cfg.apiKey } : {})
+      }
+    });
+
+    if (!res.ok) {
+      if (res.status === 400 && queries[0].includes('[')) continue;
+      return { status: res.status, post: null };
+    }
+
+    const payload = await res.json();
+    return { status: 200, post: payload.documents?.[0] || null };
+  }
+
+  return { status: 404, post: null };
+}
+
+async function tryStaticFallback(event, slug) {
+  const host = event?.headers?.host;
+  const proto = event?.headers?.['x-forwarded-proto'] || 'https';
+  if (!host) return null;
+
+  try {
+    const res = await fetch(`${proto}://${host}/data/posts.json`);
+    if (!res.ok) return null;
+    const posts = await res.json();
+    return Array.isArray(posts) ? posts.find((p) => p.slug === slug) || null : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function handler(event) {
@@ -120,45 +192,44 @@ export async function handler(event) {
     return { statusCode: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderNotFound('') };
   }
 
-  const endpoint = process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT;
-  const projectId = process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID;
-  const databaseId = process.env.APPWRITE_DATABASE_ID || process.env.VITE_APPWRITE_DATABASE_ID;
-  const postsCollectionId = process.env.APPWRITE_POSTS_COLLECTION_ID || process.env.VITE_APPWRITE_POSTS_COLLECTION_ID;
-  const apiKey = process.env.APPWRITE_API_KEY || process.env.VITE_APPWRITE_API_KEY;
-
-  if (!endpoint || !projectId || !databaseId || !postsCollectionId) {
+  const cfg = getConfig();
+  if (!cfg.endpoint || !cfg.projectId || !cfg.databaseId || !cfg.postsCollectionId) {
     return { statusCode: 500, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderServerError(slug) };
   }
 
-  const params = new URLSearchParams();
-  params.append('queries[]', `equal("slug",["${slug}"])`);
-  params.append('queries[]', 'limit(1)');
-  const url = `${endpoint}/databases/${databaseId}/collections/${postsCollectionId}/documents?${params.toString()}`;
-
   try {
-    const res = await fetch(url, {
-      headers: {
-        'X-Appwrite-Project': projectId,
-        ...(apiKey ? { 'X-Appwrite-Key': apiKey } : {})
-      }
-    });
-
-    if (!res.ok) {
-      return { statusCode: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderNotFound(slug) };
+    const { status, post } = await queryPostBySlug(cfg, slug);
+    if (post) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' },
+        body: renderPost(post, slug)
+      };
     }
 
-    const payload = await res.json();
-    const post = payload.documents?.[0];
-    if (!post) {
-      return { statusCode: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderNotFound(slug) };
+    const fallback = await tryStaticFallback(event, slug);
+    if (fallback) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' },
+        body: renderPost(fallback, slug)
+      };
     }
 
     return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' },
-      body: renderPost(post, slug)
+      statusCode: status === 401 || status === 403 ? 500 : 404,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      body: status === 401 || status === 403 ? renderServerError(slug) : renderNotFound(slug)
     };
   } catch {
+    const fallback = await tryStaticFallback(event, slug);
+    if (fallback) {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' },
+        body: renderPost(fallback, slug)
+      };
+    }
     return { statusCode: 500, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderServerError(slug) };
   }
 }
