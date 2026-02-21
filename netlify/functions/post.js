@@ -16,6 +16,16 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (m) => ({
   "'": '&#39;'
 }[m]));
 
+
+function slugify(value = '') {
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 function normalizeEndpoint(endpoint = '') {
   const trimmed = String(endpoint || '').trim();
   if (!trimmed) return '';
@@ -141,6 +151,12 @@ function getConfig() {
 }
 
 async function queryPostBySlug(cfg, slug) {
+  const normalizedTarget = slugify(slug);
+  const headers = {
+    'X-Appwrite-Project': cfg.projectId,
+    ...(cfg.apiKey ? { 'X-Appwrite-Key': cfg.apiKey } : {})
+  };
+
   const queryVariants = [
     [`equal("slug",["${slug}"])`, 'limit(1)'],
     [`equal("slug","${slug}")`, 'limit(1)']
@@ -151,20 +167,38 @@ async function queryPostBySlug(cfg, slug) {
     queries.forEach((q) => params.append('queries[]', q));
     const url = `${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents?${params.toString()}`;
 
-    const res = await fetch(url, {
-      headers: {
-        'X-Appwrite-Project': cfg.projectId,
-        ...(cfg.apiKey ? { 'X-Appwrite-Key': cfg.apiKey } : {})
-      }
-    });
+    const res = await fetch(url, { headers });
 
     if (!res.ok) {
       if (res.status === 400 && queries[0].includes('[')) continue;
+      if (res.status === 404) continue;
       return { status: res.status, post: null };
     }
 
     const payload = await res.json();
-    return { status: 200, post: payload.documents?.[0] || null };
+    const post = payload.documents?.[0] || null;
+    if (post) return { status: 200, post };
+  }
+
+  // Fallback scan: handles mismatched field naming, query parser differences, and legacy docs.
+  let offset = 0;
+  while (offset < 1000) {
+    const params = new URLSearchParams();
+    params.append('queries[]', 'limit(100)');
+    params.append('queries[]', `offset(${offset})`);
+    const url = `${cfg.endpoint}/databases/${cfg.databaseId}/collections/${cfg.postsCollectionId}/documents?${params.toString()}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) return { status: res.status, post: null };
+
+    const payload = await res.json();
+    const docs = Array.isArray(payload.documents) ? payload.documents : [];
+    const match = docs.find((d) => {
+      const candidates = [d.slug, d.Slug, d.postSlug, d.title].filter(Boolean).map((v) => slugify(v));
+      return candidates.includes(normalizedTarget);
+    });
+    if (match) return { status: 200, post: match };
+    if (docs.length < 100) break;
+    offset += 100;
   }
 
   return { status: 404, post: null };
@@ -189,12 +223,12 @@ export async function handler(event) {
   const rawSlug = extractSlug(event);
   const slug = rawSlug.replace(/["\\]/g, '').trim();
   if (!slug) {
-    return { statusCode: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderNotFound('') };
+    return { statusCode: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderNotFound('') };
   }
 
   const cfg = getConfig();
   if (!cfg.endpoint || !cfg.projectId || !cfg.databaseId || !cfg.postsCollectionId) {
-    return { statusCode: 500, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderServerError(slug) };
+    return { statusCode: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderServerError(slug) };
   }
 
   try {
@@ -217,7 +251,7 @@ export async function handler(event) {
     }
 
     return {
-      statusCode: status === 401 || status === 403 ? 500 : 404,
+      statusCode: 200,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
       body: status === 401 || status === 403 ? renderServerError(slug) : renderNotFound(slug)
     };
@@ -230,6 +264,6 @@ export async function handler(event) {
         body: renderPost(fallback, slug)
       };
     }
-    return { statusCode: 500, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderServerError(slug) };
+    return { statusCode: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' }, body: renderServerError(slug) };
   }
 }
