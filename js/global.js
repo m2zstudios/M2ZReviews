@@ -90,7 +90,7 @@ function initThemeToggle() {
 
 function renderList(el, posts, opts = {}) {
   if (!el) return;
-  el.innerHTML = posts.map((p) => `<li><a href="/posts/${p.slug}.html">${p.title}</a>${opts.meta ? `<div class="meta">${p.publishDate} • ${p.readingTime}</div>` : ''}</li>`).join('');
+  el.innerHTML = posts.map((p) => `<li><a href="/post/${p.slug}">${p.title}</a>${opts.meta ? `<div class="meta">${p.publishDate} • ${p.readingTime}</div>` : ''}</li>`).join('');
 }
 
 function truncate(text = '', max = 200) {
@@ -99,10 +99,10 @@ function truncate(text = '', max = 200) {
 
 function postCard(post) {
   return `<article class="post-card">
-    <a href="/posts/${post.slug}.html"><img loading="lazy" src="${post.heroImage || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80'}" alt="${post.heroAlt || post.title}"></a>
+    <a href="/post/${post.slug}"><img loading="lazy" src="${post.heroImage || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80'}" alt="${post.heroAlt || post.title}"></a>
     <div class="copy">
       <span class="badge">${post.category}</span>
-      <h3><a href="/posts/${post.slug}.html">${post.title}</a></h3>
+      <h3><a href="/post/${post.slug}">${post.title}</a></h3>
       <p>${truncate(post.description || '', 200)}</p>
       <div class="meta">${post.publishDate} • ${post.readingTime}</div>
     </div>
@@ -199,7 +199,7 @@ function injectSearch(posts) {
     }
     const matches = posts.filter((p) => `${p.title} ${p.description} ${p.category}`.toLowerCase().includes(v)).slice(0, 6);
     results.hidden = false;
-    results.innerHTML = matches.length ? matches.map((p) => `<a href="/posts/${p.slug}.html">${p.title}<span>${p.category}</span></a>`).join('') : '<div class="search-empty">No matching posts</div>';
+    results.innerHTML = matches.length ? matches.map((p) => `<a href="/post/${p.slug}">${p.title}<span>${p.category}</span></a>`).join('') : '<div class="search-empty">No matching posts</div>';
   };
 
   input.addEventListener('input', (e) => renderResults(e.target.value));
@@ -483,7 +483,7 @@ async function initHomepage() {
   const categoriesEl = document.querySelector('[data-categories]');
   if (categoriesEl) categoriesEl.innerHTML = [...new Set(posts.map((p) => p.category))].map((c) => `<span class="badge">${c}</span>`).join(' ');
   const trendingEl = document.querySelector('[data-trending-block]');
-  if (trendingEl) trendingEl.innerHTML = posts.filter((p) => p.trending).slice(0, 3).map((p) => `<li><a href="/posts/${p.slug}.html">${p.title}</a></li>`).join('');
+  if (trendingEl) trendingEl.innerHTML = posts.filter((p) => p.trending).slice(0, 3).map((p) => `<li><a href="/post/${p.slug}">${p.title}</a></li>`).join('');
   injectSearch(posts);
 }
 
@@ -500,7 +500,7 @@ async function initPostPage() {
   const relatedEl = document.querySelector('[data-related-posts]');
   if (relatedEl) relatedEl.innerHTML = posts.filter((p) => p.slug !== slug && p.category === current.category).slice(0, 3).map(postCard).join('');
   const canonical = document.querySelector('link[rel="canonical"]');
-  if (canonical) canonical.href = `${SITE_URL}/posts/${slug}.html`;
+  if (canonical) canonical.href = `${SITE_URL}/post/${slug}`;
   injectSearch(posts);
 }
 

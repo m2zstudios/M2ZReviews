@@ -1,6 +1,4 @@
 const fallbackOg = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80';
-const SITE_URL = 'https://example.com';
-
 const cfg = window.APPWRITE_CONFIG || {};
 const sdk = window.Appwrite || {};
 let account;
@@ -18,27 +16,6 @@ function initAppwriteClients() {
 
 const escapeHtml = (v = '') => v.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 const slugify = (value) => value.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
-
-function sectionToHtml(section, title) {
-  if (section.type === 'text') {
-    const content = (section.content || '').replace(/\n/g, '<br>');
-    return `<section class="article-section"><div class="article-text" style="font-size:${Number(section.size) || 16}px;font-weight:${section.weight || '400'};text-align:${section.align || 'left'};">${content}</div></section>`;
-  }
-  if (section.type === 'grid') {
-    const ipr = Number(section.ipr) === 2 ? 2 : 1;
-    return `<section class="article-section"><div class="article-grid article-grid-${ipr}">${section.img1 ? `<img loading="lazy" src="${escapeHtml(section.img1)}" alt="${escapeHtml(title)} gallery image one">` : ''}${section.img2 ? `<img loading="lazy" src="${escapeHtml(section.img2)}" alt="${escapeHtml(title)} gallery image two">` : ''}</div></section>`;
-  }
-  if (section.type === 'button') return `<section class="article-section" style="text-align:${section.align || 'left'};"><a class="btn" href="${escapeHtml(section.link || '#')}" target="_blank" rel="nofollow noopener">${escapeHtml(section.text || 'Learn more')}</a></section>`;
-  return '';
-}
-
-function buildPostHtml(meta, editorData) {
-  const heroImage = editorData.heroImage || meta.ogImage || fallbackOg;
-  const ogImage = meta.ogImage || heroImage;
-  const sections = (editorData.sections || []).map((s) => sectionToHtml(s, meta.title)).join('\n');
-
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(meta.title)}</title><meta name="description" content="${escapeHtml(meta.description)}"><link rel="canonical" href="${SITE_URL}/posts/${meta.slug}.html"><meta property="og:title" content="${escapeHtml(meta.title)}"><meta property="og:description" content="${escapeHtml(meta.description)}"><meta property="og:type" content="article"><meta property="og:url" content="${SITE_URL}/posts/${meta.slug}.html"><meta property="og:image" content="${escapeHtml(ogImage)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${escapeHtml(ogImage)}"><link rel="stylesheet" href="/css/style.css"><style>.article-section{margin:1.1rem 0}.article-text{line-height:1.8}.article-grid{display:grid;gap:.8rem}.article-grid-1{grid-template-columns:1fr}.article-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.article-grid img,.hero-image{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:12px}@media(max-width:900px){.article-grid-2{grid-template-columns:1fr}}</style><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"${escapeHtml(meta.title)}","description":"${escapeHtml(meta.description)}","image":"${escapeHtml(ogImage)}","datePublished":"${meta.publishDate}","author":{"@type":"Person","name":"${escapeHtml(meta.author)}"},"publisher":{"@type":"Organization","name":"M2Z Reviews"}}</script></head><body data-page="post" data-slug="${meta.slug}"><header class="site-header"><a class="logo" href="/">M2Z Reviews</a><nav class="nav"><a href="/reviews.html">Reviews</a><a href="/compare.html">Compare</a><a href="/about.html">About</a><button class="theme-toggle" data-theme-toggle>🌙</button></nav></header><main class="layout"><article class="content article"><p class="meta">Published ${meta.publishDate} • ${meta.readingTime}</p><h1 style="font-size:${Number(editorData.titleSize) || 32}px;font-weight:${editorData.titleWeight || '700'};text-align:${editorData.titleAlign || 'left'};">${escapeHtml(meta.title)}</h1><img class="hero-image" src="${escapeHtml(heroImage)}" alt="${escapeHtml(meta.title)} hero image">${sections}<section class="related"><h2>Related posts</h2><div class="posts-grid" data-related-posts></div></section></article><aside class="sidebar"><section class="card"><h3>Latest posts</h3><ul class="list" data-sidebar-latest></ul></section><section class="card"><h3>Trending</h3><ul class="list" data-sidebar-trending></ul></section></aside></main><footer class="site-footer">© 2026 M2Z Reviews.</footer><script src="/js/appwrite-config.js" defer></script><script src="/js/global.js" defer></script></body></html>`;
-}
 
 function beautifyEmbeddedEditor() {
   const frame = document.getElementById('editorFrame');
@@ -98,12 +75,12 @@ async function connectUploaders() {
   });
 }
 
-async function upsertPostInAppwrite(postEntry, html) {
+async function upsertPostInAppwrite(postEntry) {
   if (!databases || !cfg.databaseId || !cfg.postsCollectionId) return;
   try {
     const docs = await databases.listDocuments(cfg.databaseId, cfg.postsCollectionId, [sdk.Query.limit(100)]);
     const existing = (docs.documents || []).find((d) => d.slug === postEntry.slug);
-    const payload = { ...postEntry, contentHtml: html, status: 'published', stats: JSON.stringify(postEntry.stats || { likes: 0, shares: 0, views: 0 }) };
+    const payload = { ...postEntry, status: 'published', stats: JSON.stringify(postEntry.stats || { likes: 0, shares: 0, views: 0 }) };
     if (existing) await databases.updateDocument(cfg.databaseId, cfg.postsCollectionId, existing.$id, payload);
     else await databases.createDocument(cfg.databaseId, cfg.postsCollectionId, sdk.ID.unique(), payload);
   } catch {}
@@ -126,44 +103,30 @@ async function exportPackage() {
   const author = document.getElementById('author').value.trim() || 'Meraz Ahmed';
   const ogImage = document.getElementById('ogImage').value.trim() || editorData.heroImage || fallbackOg;
   const trending = document.getElementById('trendingFlag').checked;
-  const publishNow = document.getElementById('publishNow').checked;
 
-  const meta = { title, slug, description, publishDate, readingTime, category, author, ogImage };
-  const heroImage = editorData.heroImage || ogImage;
-  const postEntry = { ...meta, heroImage, heroAlt: `${title} hero image`, trending, stats: { likes: 0, shares: 0, views: 0 } };
-  const html = buildPostHtml(meta, editorData);
+  const content = frame.contentWindow.document.getElementById('preview')?.innerHTML || '';
+  const postEntry = {
+    title,
+    slug,
+    description,
+    publishDate,
+    readingTime,
+    category,
+    author,
+    ogImage,
+    heroImage: editorData.heroImage || ogImage,
+    heroAlt: `${title} hero image`,
+    trending,
+    content,
+    stats: { likes: 0, shares: 0, views: 0 }
+  };
 
-  const postsRes = await fetch('/data/posts.json');
-  const posts = await postsRes.json();
-  const updated = publishNow ? [postEntry, ...posts.filter((p) => p.slug !== slug)] : posts;
-
-  await upsertPostInAppwrite(postEntry, html);
-
-  if ('showDirectoryPicker' in window) {
-    const dir = await window.showDirectoryPicker();
-    const writeFileHandle = async (base, path, content) => {
-      const parts = path.split('/'); let current = base;
-      for (let i = 0; i < parts.length - 1; i += 1) current = await current.getDirectoryHandle(parts[i], { create: true });
-      const fileHandle = await current.getFileHandle(parts[parts.length - 1], { create: true });
-      const writable = await fileHandle.createWritable(); await writable.write(content); await writable.close();
-    };
-    await writeFileHandle(dir, `posts/${slug}.html`, html);
-    if (publishNow) await writeFileHandle(dir, 'data/posts.json', JSON.stringify(updated, null, 2));
-    status.textContent = publishNow ? `Exported posts/${slug}.html and updated data/posts.json` : `Exported posts/${slug}.html only.`;
-    return;
+  try {
+    await upsertPostInAppwrite(postEntry);
+    status.textContent = `Post saved to Appwrite. Live URL: /post/${slug}`;
+  } catch (e) {
+    status.textContent = `Publish failed: ${e.message || 'error'}`;
   }
-
-  const htmlLink = document.createElement('a');
-  htmlLink.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  htmlLink.download = `${slug}.html`;
-  htmlLink.click();
-  if (publishNow) {
-    const dataLink = document.createElement('a');
-    dataLink.href = URL.createObjectURL(new Blob([JSON.stringify(updated, null, 2)], { type: 'application/json' }));
-    dataLink.download = 'posts.json';
-    dataLink.click();
-  }
-  status.textContent = publishNow ? 'Downloaded HTML + posts.json (manual placement required).' : 'Downloaded HTML only.';
 }
 
 async function listPostsDocs() {
@@ -293,7 +256,7 @@ async function initDashboardPage() {
   `;
 
   const top = posts.slice().sort((a, b) => (Number(b._stats.likes || 0) + Number(b._stats.shares || 0) + Number(b._stats.views || 0)) - (Number(a._stats.likes || 0) + Number(a._stats.shares || 0) + Number(a._stats.views || 0))).slice(0, 8);
-  document.getElementById('topPosts').innerHTML = top.map((p) => `<li><a href="/posts/${p.slug}.html">${p.title}</a><div class="meta">Views: ${p._stats.views || 0} • Likes: ${p._stats.likes || 0} • Shares: ${p._stats.shares || 0}</div></li>`).join('') || '<li class="meta">No post stats yet.</li>';
+  document.getElementById('topPosts').innerHTML = top.map((p) => `<li><a href="/post/${p.slug}">${p.title}</a><div class="meta">Views: ${p._stats.views || 0} • Likes: ${p._stats.likes || 0} • Shares: ${p._stats.shares || 0}</div></li>`).join('') || '<li class="meta">No post stats yet.</li>';
 
   drawBarChart(document.getElementById('categoryChart'), Object.keys(categoryCounts), Object.values(categoryCounts), '#2456e8');
   drawBarChart(document.getElementById('engagementChart'), top.map((p) => p.slug || 'post'), top.map((p) => Number(p._stats.likes || 0) + Number(p._stats.shares || 0) + Number(p._stats.views || 0)), '#0ea5a4');
