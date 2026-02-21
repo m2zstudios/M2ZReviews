@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Dashboard | M2Z Reviews CMS</title>
+  <meta name="description" content="Analytics and admin controls for M2Z Reviews.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://example.com/admin-dashboard.html">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-page="admin" data-admin-page="dashboard">
+  <header class="site-header">
+    <a class="logo" href="/">M2Z Reviews</a>
+    <nav class="nav">
+      <a href="/">Back to site</a>
+      <button id="logoutBtn" class="theme-toggle" type="button">Logout</button>
+      <button class="theme-toggle" data-theme-toggle>🌙</button>
+    </nav>
+  </header>
+
+  <main class="admin-dashboard-layout">
+    <aside class="admin-side-nav">
+      <h2>Admin</h2>
+      <a class="active" href="#" data-tab="dashboard">Dashboard</a>
+      <a href="/admin-editor.html">Create Post</a>
+      <a href="#" data-tab="settings">Settings</a>
+      <a href="#" data-tab="subscribers">Subscribers</a>
+    </aside>
+
+    <section class="admin-dash-content">
+      <section data-panel="dashboard">
+        <h1>Dashboard</h1>
+        <div class="admin-kpi-grid" id="kpis"></div>
+        <div class="admin-chart-grid">
+          <article class="admin-panel"><h3>Posts by Category</h3><canvas id="categoryChart" height="260"></canvas></article>
+          <article class="admin-panel"><h3>Engagement (Views + Likes + Shares)</h3><canvas id="engagementChart" height="260"></canvas></article>
+          <article class="admin-panel"><h3>Top Views</h3><canvas id="viewsChart" height="260"></canvas></article>
+        </div>
+        <article class="admin-panel">
+          <h3>Top-performing Posts</h3>
+          <ul class="list" id="topPosts"></ul>
+        </article>
+      </section>
+      <section data-panel="settings" hidden>
+        <h1>Settings</h1>
+        <article class="admin-panel admin-form">
+          <p class="meta">Project: <span id="projectName"></span></p>
+          <p class="meta">Endpoint: <span id="projectEndpoint"></span></p>
+
+          <label for="homeAdUrl">Home Page Ad Image URL</label>
+          <input id="homeAdUrl" placeholder="https://...">
+
+          <label for="homeAdRedUrl">Home Page Ad Redirect URL</label>
+          <input id="homeAdRedUrl" placeholder="https://...">
+
+          <label for="postAdUrl">Post/Preview Page Ad Image URL</label>
+          <input id="postAdUrl" placeholder="https://...">
+
+          <label for="postAdRedUrl">Post/Preview Page Ad Redirect URL</label>
+          <input id="postAdRedUrl" placeholder="https://...">
+
+          <label for="siteTitle">Global Site Title</label>
+          <input id="siteTitle" placeholder="M2Z Reviews | Trusted Tech Reviews & Comparisons">
+
+          <label for="siteMetaDesc">Site Meta Description</label>
+          <textarea id="siteMetaDesc" rows="3"></textarea>
+
+          <label for="siteOgImage">OG Image URL</label>
+          <input id="siteOgImage" placeholder="https://...">
+
+          <label for="siteHeroImage">Home Hero Image URL</label>
+          <input id="siteHeroImage" placeholder="https://...">
+
+          <button id="saveSettingsBtn" class="btn btn-anim" type="button">Update Settings</button>
+          <p class="meta" id="settingsState"></p>
+        </article>
+      </section>
+
+      <section data-panel="subscribers" hidden>
+        <h1>Subscribers</h1>
+        <article class="admin-panel">
+          <ol class="subscriber-list" id="subscriberList"></ol>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">Internal use only.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+  <script src="/js/appwrite-config.js"></script>
+  <script src="/js/global.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>

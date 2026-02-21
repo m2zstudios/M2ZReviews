@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /editor/
+Disallow: /admin.html
+Disallow: /admin-editor.html
+Disallow: /admin-dashboard.html
+
+Sitemap: https://example.com/sitemap.xml

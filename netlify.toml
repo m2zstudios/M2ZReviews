@@ -1,0 +1,14 @@
+[build]
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/post/:slug"
+  to = "/.netlify/functions/post?slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/post/:slug/"
+  to = "/.netlify/functions/post?slug=:slug"
+  status = 200
+  force = true

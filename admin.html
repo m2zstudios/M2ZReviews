@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Login | M2Z Reviews CMS</title>
+  <meta name="description" content="Protected admin login for M2Z Reviews content management.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://example.com/admin.html">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-page="admin" data-admin-page="login">
+  <header class="site-header">
+    <a class="logo" href="/">M2Z Reviews</a>
+    <nav class="nav">
+      <a href="/">Back to site</a>
+      <button class="theme-toggle" data-theme-toggle>🌙</button>
+    </nav>
+  </header>
+
+  <main class="admin-login-shell">
+    <section class="admin-login-card" aria-label="Admin login">
+      <p class="badge">Secure Access</p>
+      <h1>Sign in</h1>
+      <p class="meta">Admin accounts are managed from backend only.</p>
+
+      <label for="adminEmail">Email</label>
+      <input id="adminEmail" type="email" placeholder="you@example.com">
+
+      <label for="adminPassword">Password</label>
+      <input id="adminPassword" type="password" placeholder="••••••••">
+
+      <button id="loginBtn" class="btn" type="button">Login</button>
+      <p id="authError" class="admin-error" hidden></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">Internal use only.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+  <script src="/js/appwrite-config.js"></script>
+  <script src="/js/global.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>

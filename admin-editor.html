@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Post Editor | M2Z Reviews CMS</title>
+  <meta name="description" content="Post editor and maker workspace for M2Z Reviews.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://example.com/admin-editor.html">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-page="admin" data-admin-page="editor">
+  <header class="site-header">
+    <a class="logo" href="/">M2Z Reviews</a>
+    <nav class="nav">
+      <a href="/admin-dashboard.html">Dashboard</a><a href="/">Back to site</a>
+      <button id="logoutBtn" class="theme-toggle" type="button">Logout</button>
+      <button class="theme-toggle" data-theme-toggle>🌙</button>
+    </nav>
+  </header>
+
+  <main class="admin-shell" aria-label="Post editor workspace">
+    <section class="admin-intro">
+      <h1>Post Editor / Maker</h1>
+      <p class="meta">Upload images and publish directly to Appwrite for SSR rendering.</p>
+    </section>
+
+    <section id="cmsBox" class="admin-workspace">
+      <article class="admin-panel admin-panel-left" aria-label="Post metadata editor">
+        <div class="panel-head">
+          <h2>Metadata & Publishing</h2>
+          <p class="meta">Everything here is stored in Appwrite and served by Netlify SSR at <code>/post/:slug</code>.</p>
+        </div>
+
+        <form class="admin-form" onsubmit="return false;">
+          <label for="title">Title</label>
+          <input id="title" required>
+
+          <label for="slug">Slug</label>
+          <input id="slug" required placeholder="my-post-slug">
+
+          <label for="description">Description</label>
+          <textarea id="description" rows="4"></textarea>
+
+          <div class="admin-grid-2">
+            <div>
+              <label for="category">Category</label>
+              <select id="category"><option value="">Select category</option><option>Audio</option><option>Phones</option><option>Wearables</option><option>Laptops</option><option>Accessories</option><option>Smart Home</option><option>General</option></select>
+            </div>
+            <div>
+              <label for="author">Author</label>
+              <input id="author" value="Meraz Ahmed">
+            </div>
+          </div>
+
+          <div class="admin-grid-2">
+            <div>
+              <label for="publishDate">Publish Date</label>
+              <input id="publishDate" type="date">
+            </div>
+            <div>
+              <label for="readingTime">Reading Time</label>
+              <input id="readingTime" placeholder="7 min read">
+            </div>
+          </div>
+
+          <label for="ogImage">OG Image URL (optional)</label>
+          <input id="ogImage" placeholder="Auto uses hero image if empty">
+
+          <label for="heroUploader">Upload Hero Image</label>
+          <input id="heroUploader" type="file" accept="image/*">
+
+          <div class="admin-grid-2">
+            <div>
+              <label for="gridSectionIndex">Grid Section #</label>
+              <input id="gridSectionIndex" type="number" min="1" value="1">
+            </div>
+            <div>
+              <label for="gridSlot">Grid Slot</label>
+              <select id="gridSlot"><option value="img1">Image 1</option><option value="img2">Image 2</option></select>
+            </div>
+          </div>
+          <label for="gridUploader">Upload Grid Image</label>
+          <input id="gridUploader" type="file" accept="image/*">
+
+          <div class="admin-grid-2">
+            <label class="switch-row" for="trendingFlag"><input id="trendingFlag" type="checkbox"> Mark as trending</label>
+            <span class="meta">Publishing is direct to Appwrite (no static file export).</span>
+          </div>
+
+          <div class="admin-actions">
+            <button id="exportBtn" class="btn" type="button">Publish to Appwrite</button>
+            <p class="meta" id="exportState"></p>
+          </div>
+        </form>
+      </article>
+
+      <article class="admin-panel admin-panel-right" aria-label="Editor preview area">
+        <div class="panel-head">
+          <h2>Builder + Preview</h2>
+          <p class="meta">Preview supports text, alignments, image grids, and buttons from editor.</p>
+        </div>
+        <iframe id="editorFrame" src="/editor/editor.html" title="Page editor"></iframe>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">Internal use only.</footer>
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+  <script src="/js/appwrite-config.js"></script>
+  <script src="/js/global.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>
